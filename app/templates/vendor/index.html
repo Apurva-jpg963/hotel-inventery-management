@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Vendor Management | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Vendor Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Supply Chain Ledger</h3>
+            <p class="text-xs text-slate-400">Track raw materials supplier accounts, outstanding credits, and bill invoices</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="{{ url_for('vendor.add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Add Vendor
+            </a>
+            <a href="{{ url_for('vendor.bill_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="file-plus" class="w-4 h-4"></i> Record Bill
+            </a>
+            <a href="{{ url_for('vendor.payment_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="receipt" class="w-4 h-4"></i> Record Payment
+            </a>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto">
+        <a href="{{ url_for('vendor.index', view='vendors') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'vendors' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Vendor Profiles
+        </a>
+        <a href="{{ url_for('vendor.index', view='bills') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'bills' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Purchase Bills (Credit)
+        </a>
+        <a href="{{ url_for('vendor.index', view='payments') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'payments' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Cash Payments
+        </a>
+    </div>
+
+    <!-- Search / Filter bar -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm flex items-center justify-between">
+        <form method="GET" action="" class="w-full max-w-md">
+            <input type="hidden" name="view" value="{{ view }}">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </span>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search here..." class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500">
+            </div>
+        </form>
+    </div>
+
+    <!-- Data Panel rendering depending on 'view' -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        
+        <!-- View 1: Vendors -->
+        {% if view == 'vendors' %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Name</th>
+                        <th class="px-6 py-4">Contact Person</th>
+                        <th class="px-6 py-4">Phone</th>
+                        <th class="px-6 py-4">Email</th>
+                        <th class="px-6 py-4">Outstanding Balance</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for item in vendors %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
+                            <a href="{{ url_for('vendor.index', view='ledgers', vendor_id=item.id) }}" class="hover:underline text-primary-500">
+                                {{ item.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.contact_person or '-' }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.phone or '-' }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.email or '-' }}</td>
+                        <td class="px-6 py-4 font-bold {% if item.outstanding_balance > 0 %}text-amber-500{% else %}text-slate-500{% endif %}">
+                            {{ item.outstanding_balance | currency }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ url_for('vendor.index', view='ledgers', vendor_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="View Statement Ledger">
+                                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{{ url_for('vendor.edit', vendor_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="Edit">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('vendor.delete', vendor_id=item.id) }}" onsubmit="return confirm('Deleting this vendor will cascade delete all related bills and payments. Proceed?');" class="inline">
+                                    <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                            No suppliers found. Click "Add Vendor" to start.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- View 2: Bills -->
+        {% elif view == 'bills' %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Bill Date</th>
+                        <th class="px-6 py-4">Supplier Name</th>
+                        <th class="px-6 py-4">Bill No</th>
+                        <th class="px-6 py-4">Details</th>
+                        <th class="px-6 py-4">Amount</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for item in bills %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ item.date | shortdate }}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">{{ item.vendor.name }}</td>
+                        <td class="px-6 py-4 font-mono text-slate-500">{{ item.bill_number }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ item.description or '' }}">{{ item.description or '-' }}</td>
+                        <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ item.amount | currency }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <form method="POST" action="{{ url_for('vendor.bill_delete', bill_id=item.id) }}" onsubmit="return confirm('Delete this purchase bill?');">
+                                <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                            No bills found. Click "Record Bill" to log purchase invoice details.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- View 3: Payments -->
+        {% elif view == 'payments' %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Payment Date</th>
+                        <th class="px-6 py-4">Supplier Name</th>
+                        <th class="px-6 py-4">Payment Channel</th>
+                        <th class="px-6 py-4">Details</th>
+                        <th class="px-6 py-4">Paid Amount</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for item in payments %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ item.date | shortdate }}</td>
+                        <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">{{ item.vendor.name }}</td>
+                        <td class="px-6 py-4 text-slate-500">{{ item.payment_method }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ item.description or '' }}">{{ item.description or '-' }}</td>
+                        <td class="px-6 py-4 font-bold text-emerald-500">{{ item.amount | currency }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <form method="POST" action="{{ url_for('vendor.payment_delete', payment_id=item.id) }}" onsubmit="return confirm('Delete this vendor payment entry?');">
+                                <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                            No vendor payment logs found. Click "Record Payment" to log cash payments.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endblock %}

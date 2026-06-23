@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Savings Management | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Savings Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Bank Savings Ledger</h3>
+            <p class="text-xs text-slate-400">Manage bank deposits and withdrawals. Moving liquid cash to savings decreases cash book balance.</p>
+        </div>
+        <a href="{{ url_for('finance.savings_add') }}" class="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all self-start sm:self-auto">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Savings Entry
+        </a>
+    </div>
+
+    <!-- Savings Balance Card -->
+    <div class="max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950/30 text-cyan-500">
+                <i data-lucide="piggy-bank" class="w-8 h-8"></i>
+            </div>
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Bank Savings Balance</span>
+                <h2 class="text-2xl font-bold mt-1 text-cyan-600 dark:text-cyan-400">{{ balance | currency }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Savings Transactions Table -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Transaction Date</th>
+                        <th class="px-6 py-4">Type</th>
+                        <th class="px-6 py-4">Bank Name</th>
+                        <th class="px-6 py-4">Description</th>
+                        <th class="px-6 py-4">Amount</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for item in transactions %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ item.date | shortdate }}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+                                {% if item.transaction_type == 'Deposit' %}
+                                    bg-cyan-50 dark:bg-cyan-950/20 text-cyan-600 dark:text-cyan-400
+                                {% else %}
+                                    bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400
+                                {% endif %}">
+                                {{ item.transaction_type }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-900 dark:text-white font-semibold">{{ item.bank_name }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ item.description or '' }}">
+                            {{ item.description or '-' }}
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ item.amount | currency }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <form method="POST" action="{{ url_for('finance.savings_delete', savings_id=item.id) }}" onsubmit="return confirm('Delete this savings log? Liquid cashbook balance will revert.');">
+                                <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-slate-400">
+                            No savings transactions logged yet. Click "Add Savings Entry" to record deposits or withdrawals.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

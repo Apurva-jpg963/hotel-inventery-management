@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Excel Export Center | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Excel Export Center{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    
+    <!-- Title Info -->
+    <div>
+        <h3 class="text-lg font-bold">Data Compilation & Downloads</h3>
+        <p class="text-xs text-slate-400">Generate and export fully detailed spreadsheets containing ledger histories and audit logs.</p>
+    </div>
+
+    <!-- Date Range Picker Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+        <h4 class="font-bold text-sm text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4 text-primary-500"></i> Date Range Filter (Optional)
+        </h4>
+        <div class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label for="start_date" class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Start Date</label>
+                <input type="date" id="start_date" value="{{ default_start }}" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
+            </div>
+            <div class="flex-1 min-w-[200px]">
+                <label for="end_date" class="block text-[10px] font-bold text-slate-400 uppercase mb-2">End Date</label>
+                <input type="date" id="end_date" value="{{ default_end }}" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
+            </div>
+            <div>
+                <button type="button" id="clear_dates" class="px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-950 transition-all flex items-center gap-2">
+                    <i data-lucide="x" class="w-4 h-4"></i> Clear Filter
+                </button>
+            </div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2">Filtering limits the transaction logs (CashBook, Income, Expenses, Vendor/Employee/Credit details) in the generated files to the selected range.</p>
+    </div>
+
+    <!-- Export Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- 1. Complete Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Complete Financial Workbook</h4>
+                <p class="text-xs text-slate-400">Export general cash books, income logs, scoped expenses, bank savings logs, loan debt accounts, and owner drawings entries inside a single multi-tab spreadsheet.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='complete') }}" class="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Spreadsheet
+                </a>
+            </div>
+        </div>
+
+        <!-- 2. Revenue Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Revenue Workbook</h4>
+                <p class="text-xs text-slate-400">Export a dedicated revenue spreadsheet with category summaries (Room Revenue, Restaurant Revenue, Banquet Revenue, etc.) and audit trails.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='revenue') }}" class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Revenue Book
+                </a>
+            </div>
+        </div>
+
+        <!-- 3. Expense Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-500 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="trending-down" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Expense Workbook</h4>
+                <p class="text-xs text-slate-400">Export a dedicated expense spreadsheet compiling general scope costs (Hotel, Development, Utilities) and payroll/vendor payouts with totals.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='expenses') }}" class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Expense Book
+                </a>
+            </div>
+        </div>
+
+        <!-- 4. Vendor Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-orange-600 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Vendor Accounts Workbook</h4>
+                <p class="text-xs text-slate-400">Generates and compiles a separate workbook sheet for **EVERY** supplier registered in the database, outlining their credit purchase statements and payments.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='vendors') }}" class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Supplier Book
+                </a>
+            </div>
+        </div>
+
+        <!-- 5. Employee Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="user-check" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Employee Payroll Workbook</h4>
+                <p class="text-xs text-slate-400">Generates and compiles a separate workbook sheet for **EVERY** employee showing their salary advances, attendance models, deductions, and gross paychecks.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='employees') }}" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download HR Book
+                </a>
+            </div>
+        </div>
+
+        <!-- 6. Credit Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="handshake" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Credit Accounts Workbook</h4>
+                <p class="text-xs text-slate-400">Generates and compiles a separate workbook sheet for **EVERY** credit party (Lena-Dena) registered in the system, tracing bill pending and bill received history.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='credit') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Credit Book
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const clearBtn = document.getElementById('clear_dates');
+    const buttons = document.querySelectorAll('a[href*="/export"]');
+    
+    // Store original href as a data attribute
+    buttons.forEach(btn => {
+        btn.setAttribute('data-base-href', btn.getAttribute('href'));
+    });
+    
+    function updateLinks() {
+        const startVal = startInput.value;
+        const endVal = endInput.value;
+        
+        buttons.forEach(btn => {
+            let base = btn.getAttribute('data-base-href');
+            let params = [];
+            if (startVal) {
+                params.push(`start_date=${startVal}`);
+            }
+            if (endVal) {
+                params.push(`end_date=${endVal}`);
+            }
+            if (params.length > 0) {
+                const sep = base.includes('?') ? '&' : '?';
+                btn.setAttribute('href', base + sep + params.join('&'));
+            } else {
+                btn.setAttribute('href', base);
+            }
+        });
+    }
+    
+    startInput.addEventListener('change', updateLinks);
+    endInput.addEventListener('change', updateLinks);
+    
+    clearBtn.addEventListener('click', function() {
+        startInput.value = '';
+        endInput.value = '';
+        updateLinks();
+    });
+    
+    // Run once on load to sync initial defaults
+    updateLinks();
+});
+</script>
+{% endblock %}

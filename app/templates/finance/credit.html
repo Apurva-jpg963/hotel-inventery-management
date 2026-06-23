@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Credit Account | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Credit (Lena-Dena) Accounts{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Credit (Lena-Dena) Ledger</h3>
+            <p class="text-xs text-slate-400">Manage separate ledgers for money lent (Bill Pending - Lena) and money borrowed (Bill Received - Dena)</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('finance.credit_party_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Add Credit Party
+            </a>
+            <a href="{{ url_for('finance.credit_transaction_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="receipt" class="w-4 h-4"></i> Record Transaction
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Balances Card Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
+        <!-- Bill Pending (Lena) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500">
+                    <i data-lucide="arrow-up-right" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Bill Pending (Lena)</span>
+                    <h3 class="text-xl font-bold mt-0.5 text-indigo-600 dark:text-indigo-400">{{ total_bill_pending | currency }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bill Received (Dena) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="p-3 rounded-2xl bg-fuchsia-50 dark:bg-fuchsia-950/30 text-fuchsia-500">
+                    <i data-lucide="arrow-down-left" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Bill Received (Dena)</span>
+                    <h3 class="text-xl font-bold mt-0.5 text-fuchsia-600 dark:text-fuchsia-400">{{ total_bill_received | currency }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Parties Table Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Party Name</th>
+                        <th class="px-6 py-4">Contact Phone</th>
+                        <th class="px-6 py-4 text-right">Lena (Bill Pending)</th>
+                        <th class="px-6 py-4 text-right">Dena (Bill Received)</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for item in accounts %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
+                            <a href="{{ url_for('finance.index', tab='credit', party_id=item.id) }}" class="hover:underline text-primary-500">
+                                {{ item.party_name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.phone or '-' }}</td>
+                        <td class="px-6 py-4 text-right font-bold text-indigo-500">{{ item.receivable_balance | currency }}</td>
+                        <td class="px-6 py-4 text-right font-bold text-fuchsia-500">{{ item.payable_balance | currency }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ url_for('finance.index', tab='credit', party_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="View Statement Ledger">
+                                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{{ url_for('finance.credit_transaction_add', party_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors" title="New Transaction">
+                                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('finance.credit_party_delete', party_id=item.id) }}" onsubmit="return confirm('Delete this credit party and all ledger transaction history?');" class="inline">
+                                    <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+                            No credit accounts registered. Click "Add Credit Party" to get started.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

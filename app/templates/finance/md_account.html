@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}MD Sir Account | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}MD Sir Account{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Managing Director Capital Ledger</h3>
+            <p class="text-xs text-slate-400">Track capital investments and drawings split by Cash and Online payment.</p>
+        </div>
+        <a href="{{ url_for('finance.md_add') }}" class="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all self-start sm:self-auto">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add MD Entry
+        </a>
+    </div>
+
+    <!-- Balance Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Cash Balance -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="p-2.5 rounded-2xl bg-yellow-50 dark:bg-yellow-950/30 text-yellow-500">
+                    <i data-lucide="banknote" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cash Balance</span>
+            </div>
+            <h2 class="text-xl font-bold {% if balance_cash >= 0 %}text-slate-900 dark:text-white{% else %}text-rose-600{% endif %}">
+                {{ balance_cash | currency }}
+            </h2>
+            <p class="text-[10px] text-slate-400 mt-1">Net of Cash deposits & withdrawals</p>
+        </div>
+
+        <!-- Online Balance -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-500">
+                    <i data-lucide="smartphone" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Online Balance</span>
+            </div>
+            <h2 class="text-xl font-bold {% if balance_online >= 0 %}text-slate-900 dark:text-white{% else %}text-rose-600{% endif %}">
+                {{ balance_online | currency }}
+            </h2>
+            <p class="text-[10px] text-slate-400 mt-1">Net of UPI / Bank deposits & withdrawals</p>
+        </div>
+
+        <!-- MD Total Net Balance -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 text-amber-500">
+                    <i data-lucide="user-square" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MD Net Balance</span>
+            </div>
+            <h2 class="text-xl font-bold {% if balance_total >= 0 %}text-amber-600 dark:text-amber-400{% else %}text-rose-600{% endif %}">
+                {{ balance_total | currency }}
+            </h2>
+            <p class="text-[10px] text-slate-400 mt-1">Total deposits − Total withdrawals</p>
+        </div>
+
+        <!-- Overall Cash Book Balance -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-500">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                </div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Overall Cash Book</span>
+            </div>
+            <h2 class="text-xl font-bold {% if cash_balance >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600{% endif %}">
+                {{ cash_balance | currency }}
+            </h2>
+            <p class="text-[10px] text-slate-400 mt-1">Current balance across all transactions</p>
+        </div>
+
+    </div>
+
+    <!-- MD Transactions Table -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Type</th>
+                        <th class="px-6 py-4">Payment</th>
+                        <th class="px-6 py-4">Remarks</th>
+                        <th class="px-6 py-4">Amount</th>
+                        <th class="px-6 py-4">Cash Running</th>
+                        <th class="px-6 py-4">Online Running</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for entry in md_ledger %}
+                    {% set item = entry.tx %}
+                    {% set is_cash = item.payment_method == 'Cash' %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ item.date | shortdate }}</td>
+
+                        <!-- Transaction Type -->
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+                                {% if item.transaction_type == 'Deposit' %}bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400
+                                {% else %}bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400{% endif %}">
+                                {% if item.transaction_type == 'Deposit' %}
+                                    <i data-lucide="arrow-down-circle" class="w-3 h-3"></i> Deposit
+                                {% else %}
+                                    <i data-lucide="arrow-up-circle" class="w-3 h-3"></i> Withdrawal
+                                {% endif %}
+                            </span>
+                        </td>
+
+                        <!-- Payment Method Badge -->
+                        <td class="px-6 py-4">
+                            {% if is_cash %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-400">
+                                <i data-lucide="banknote" class="w-3 h-3"></i> Cash
+                            </span>
+                            {% elif item.payment_method == 'UPI' %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400">
+                                <i data-lucide="smartphone" class="w-3 h-3"></i> UPI
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400">
+                                <i data-lucide="building-2" class="w-3 h-3"></i> Bank
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ item.description or '' }}">
+                            {{ item.description or '-' }}
+                        </td>
+
+                        <!-- Amount -->
+                        <td class="px-6 py-4 font-bold {% if item.transaction_type == 'Deposit' %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+                            {% if item.transaction_type == 'Deposit' %}+{% else %}−{% endif %}{{ item.amount | currency }}
+                        </td>
+
+                        <!-- Cash Running Balance -->
+                        <td class="px-6 py-4">
+                            {% if is_cash %}
+                            <span class="font-semibold {% if entry.running_cash >= 0 %}text-slate-900 dark:text-white{% else %}text-rose-600{% endif %}">
+                                {{ entry.running_cash | currency }}
+                            </span>
+                            {% else %}
+                            <span class="text-slate-300 dark:text-slate-600">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Online Running Balance -->
+                        <td class="px-6 py-4">
+                            {% if not is_cash %}
+                            <span class="font-semibold {% if entry.running_online >= 0 %}text-slate-900 dark:text-white{% else %}text-rose-600{% endif %}">
+                                {{ entry.running_online | currency }}
+                            </span>
+                            {% else %}
+                            <span class="text-slate-300 dark:text-slate-600">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-4 text-right">
+                            <form method="POST" action="{{ url_for('finance.md_delete', md_id=item.id) }}" onsubmit="return confirm('Delete this MD Sir account entry? Cash balance will revert.');">
+                                <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                            No MD Sir transactions logged. Click "Add MD Entry" to record drawings or contributions.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

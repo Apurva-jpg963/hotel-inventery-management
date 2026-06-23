@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports Center | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Financial Reports Center{% endblock %}
+
+{% block head %}
+<style>
+@media print {
+    /* Hide layout shell and interactive features */
+    #sidebar, 
+    #sidebar-overlay,
+    header, 
+    .print\:hidden { 
+        display: none !important; 
+    }
+    
+    /* Reset margins and scrollbars on html/body */
+    html, body {
+        background: #fff !important;
+        color: #000 !important;
+        height: auto !important;
+        overflow: visible !important;
+        font-size: 12px !important;
+    }
+    
+    /* Ensure main wrapper flows naturally without fixed heights */
+    .h-full, .overflow-hidden {
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
+    .flex-1.flex.flex-col.overflow-hidden.relative {
+        display: block !important;
+        overflow: visible !important;
+        position: static !important;
+    }
+    
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #fff !important;
+        overflow: visible !important;
+    }
+
+    #print-report {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 10px !important;
+    }
+
+    /* Print cards styling */
+    .bg-white, .dark\:bg-slate-900 {
+        background: #fff !important;
+        color: #000 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+
+    .text-slate-900, .dark\:text-white, .text-slate-500, .text-slate-400 {
+        color: #000 !important;
+    }
+
+    .text-emerald-500 {
+        color: #047857 !important; /* darker green for legible print */
+    }
+
+    .text-rose-500 {
+        color: #b91c1c !important; /* darker red for legible print */
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Filter Header -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm print:hidden">
+        <form method="GET" action="" class="flex flex-col md:flex-row md:items-end gap-4 justify-between">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                
+                <!-- Period Selector -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Report Period</label>
+                    <select name="period" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
+                        <option value="daily" {% if period == 'daily' %}selected{% endif %}>Daily Summary</option>
+                        <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>Weekly Summary</option>
+                        <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>Monthly Summary</option>
+                        <option value="quarterly" {% if period == 'quarterly' %}selected{% endif %}>Quarterly Summary</option>
+                        <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>Yearly Summary</option>
+                    </select>
+                </div>
+
+                <!-- Date Picker -->
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Reference Date</label>
+                    <input type="date" name="date" value="{{ anchor_date.strftime('%Y-%m-%d') }}" onchange="this.form.submit()" class="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
+                </div>
+
+            </div>
+
+            <!-- Print Summary Trigger -->
+            <button type="button" onclick="window.print()" class="flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold py-2.5 px-4 rounded-xl transition-all print:hidden">
+                <i data-lucide="printer" class="w-4 h-4"></i> Print Report Summary
+            </button>
+        </form>
+    </div>
+
+    <!-- Active Range Display -->
+    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 print:hidden">
+        <i data-lucide="calendar-range" class="w-4 h-4"></i>
+        <span>Reporting Period: {{ start_date | shortdate }} to {{ end_date | shortdate }}</span>
+    </div>
+
+    <!-- Printable Report Region -->
+    <div id="print-report">
+
+    <!-- Print Header (visible only on print) -->
+    <div class="hidden print:block border-b pb-4 mb-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-xl font-bold">Hotel Saiprasad Finance ERP</h1>
+                <p class="text-xs text-slate-500 mt-1">Financial Report — {{ period | capitalize }} Summary</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Period: {{ start_date | shortdate }} to {{ end_date | shortdate }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] text-slate-400">Printed on: <script>document.write(new Date().toLocaleDateString())</script></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Summary Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Total Period Revenue -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Period Revenue</span>
+            <h3 class="text-2xl font-bold text-emerald-500">{{ total_income | currency }}</h3>
+            <p class="text-[9px] text-slate-400 mt-2">Cash & Digital Inflow recorded in range</p>
+        </div>
+
+        <!-- Total Period Expenses -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Period Expenses</span>
+            <h3 class="text-2xl font-bold text-rose-500">{{ total_expense | currency }}</h3>
+            <p class="text-[9px] text-slate-400 mt-2">Cash & Digital Outflow recorded in range</p>
+        </div>
+
+        <!-- Net Operating Margin -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Net Margin</span>
+            <h3 class="text-2xl font-bold {% if net_margin >= 0 %}text-teal-500{% else %}text-rose-500{% endif %}">
+                {{ net_margin | currency }}
+            </h3>
+            <p class="text-[9px] text-slate-400 mt-2">Revenue minus Costs margins</p>
+        </div>
+
+    </div>
+
+    <!-- Details Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        
+        <!-- Outbound Expense Breakdown Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-sm uppercase tracking-wider text-slate-400 border-b pb-2">Outbound Cash Breakdown</h4>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Hotel Expenses (Grocery, dairy etc)</span>
+                    <span class="font-semibold">{{ hotel_exp | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Other Expenses (Utility bills etc)</span>
+                    <span class="font-semibold">{{ other_exp | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Development Expenses (Asset creation)</span>
+                    <span class="font-semibold">{{ dev_exp | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Released Salary Payments</span>
+                    <span class="font-semibold text-rose-500">{{ payroll_paid | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Vendor Payments Released</span>
+                    <span class="font-semibold text-rose-500">{{ vendor_paid | currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capital Snapshot Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <h4 class="font-bold text-sm uppercase tracking-wider text-slate-400 border-b pb-2">Capital & Cash Snapshot</h4>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Central Cash Book Balance</span>
+                    <span class="font-bold text-slate-900 dark:text-white">{{ cash_bal | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Bank Savings Account Balance</span>
+                    <span class="font-semibold text-cyan-600 dark:text-cyan-400">{{ savings_bal | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Total Bank Installments Paid</span>
+                    <span class="font-semibold text-rose-500">{{ total_bank_installments | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Lena Bill Pending (Credit Party)</span>
+                    <span class="font-semibold text-indigo-500">{{ bill_pending | currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Dena Bill Received (Credit Party)</span>
+                    <span class="font-semibold text-fuchsia-500">{{ bill_received | currency }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    </div><!-- end #print-report -->
+
+</div>
+{% endblock %}

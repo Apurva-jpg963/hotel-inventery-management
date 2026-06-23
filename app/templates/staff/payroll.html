@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Payroll & Advances | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Staff Payroll & Salary Advances{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Payroll Registers</h3>
+            <p class="text-xs text-slate-400">Manage monthly salary payments, cash advances, adjustments, and pending balances</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('staff.advance_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Issue Salary Advance
+            </a>
+            <a href="{{ url_for('staff.payroll_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="wallet" class="w-4 h-4"></i> Release Payroll
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        <!-- Column 1 & 2: Payroll Sheets (Left) -->
+        <div class="xl:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider">Released Payroll Sheets</h4>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse erp-table">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                                <th class="px-6 py-4">Employee</th>
+                                <th class="px-6 py-4">Period / Note</th>
+                                <th class="px-6 py-4 text-center">Days</th>
+                                <th class="px-6 py-4 text-right">Gross Salary</th>
+                                <th class="px-6 py-4 text-right">Advance Adj</th>
+                                <th class="px-6 py-4 text-right">Net Payable</th>
+                                <th class="px-6 py-4 text-right">Paid</th>
+                                <th class="px-6 py-4 text-right">Pending</th>
+                                <th class="px-6 py-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                            {% for item in payrolls %}
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                                <td class="px-6 py-4">
+                                    <h4 class="font-semibold text-slate-900 dark:text-white">{{ item.employee.name }}</h4>
+                                    <span class="text-[10px] text-slate-400 font-medium">{{ item.employee.designation }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 text-xs font-semibold">{{ item.month }}</td>
+                                <td class="px-6 py-4 text-center font-semibold text-slate-700 dark:text-slate-350">
+                                    {{ item.days_present or 0 }}
+                                </td>
+                                <td class="px-6 py-4 text-right">{{ item.calculated_salary | currency }}</td>
+                                <td class="px-6 py-4 text-right text-rose-500">-{{ item.advance_adjusted | currency }}</td>
+                                <td class="px-6 py-4 text-right font-semibold text-slate-900 dark:text-white">{{ item.net_payable | currency }}</td>
+                                <td class="px-6 py-4 text-right text-emerald-500 font-bold">{{ item.paid_amount | currency }}</td>
+                                <td class="px-6 py-4 text-right font-bold {% if item.pending_amount > 0 %}text-amber-500{% else %}text-slate-400{% endif %}">
+                                    {{ item.pending_amount | currency }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        {% if item.pending_amount > 0 %}
+                                        <a href="{{ url_for('staff.payroll_pay', payroll_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors animate-pulse" title="Record Part-Payment">
+                                            <i data-lucide="wallet" class="w-4 h-4"></i>
+                                        </a>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('staff.payroll_delete', payroll_id=item.id) }}" onsubmit="return confirm('Delete this payroll entry? Outstanding balances will revert.');" class="inline">
+                                            <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="9" class="px-6 py-12 text-center text-slate-400">
+                                    No payroll sheets released yet. Click "Release Payroll" to run calculation logs.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 3: Salary Advances (Right) -->
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider">Salary Advances Log</h4>
+                </div>
+                <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[500px] overflow-y-auto">
+                    {% for item in advances %}
+                    <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 flex items-start justify-between gap-3 transition-colors">
+                        <div>
+                            <h4 class="font-semibold text-sm text-slate-900 dark:text-white">{{ item.employee.name }}</h4>
+                            <p class="text-[10px] text-slate-400 font-medium">{{ item.date | shortdate }}</p>
+                            <p class="text-xs text-slate-500 mt-1">{{ item.description or 'Salary advance' }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-sm text-rose-500">{{ item.amount | currency }}</span>
+                            <form method="POST" action="{{ url_for('staff.advance_delete', advance_id=item.id) }}" onsubmit="return confirm('Delete this advance record?');">
+                                <button type="submit" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-rose-500 transition-colors">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-6 text-center text-slate-400 text-xs">
+                        No outstanding salary advances recorded.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}User Management Console{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- Title & Add User Trigger -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-lg font-bold">System Operators</h3>
+            <p class="text-xs text-slate-400">Total registered accounts who can access this ERP</p>
+        </div>
+        <a href="{{ url_for('auth.register') }}" class="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add New User
+        </a>
+    </div>
+
+    <!-- Users Table Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Username</th>
+                        <th class="px-6 py-4">Email</th>
+                        <th class="px-6 py-4">Role</th>
+                        <th class="px-6 py-4">Date Created</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for u in users %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">{{ u.username }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ u.email }}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium 
+                                {% if u.role == 'Admin' %}
+                                    bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400
+                                {% elif u.role == 'Manager' %}
+                                    bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400
+                                {% else %}
+                                    bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300
+                                {% endif %}">
+                                {{ u.role }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ u.created_at.strftime('%d-%b-%Y') }}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold 
+                                {% if u.is_active %}
+                                    bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400
+                                {% else %}
+                                    bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500
+                                {% endif %}">
+                                {% if u.is_active %}
+                                    Active
+                                {% else %}
+                                    Deactive
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if u.id != current_user.id %}
+                            <a href="{{ url_for('settings.toggle_user', user_id=u.id) }}" class="inline-flex items-center gap-1 text-xs font-medium {% if u.is_active %}text-rose-500 hover:underline{% else %}text-emerald-500 hover:underline{% endif %}">
+                                {% if u.is_active %}
+                                    <i data-lucide="user-minus" class="w-3.5 h-3.5"></i> Deactivate
+                                {% else %}
+                                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i> Activate
+                                {% endif %}
+                            </a>
+                            {% else %}
+                            <span class="text-xs text-slate-400 italic">Self Account</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Log | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Staff Attendance{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl mx-auto">
+    
+    <!-- Top Date Selector -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-base font-bold">Daily Attendance Register</h3>
+            <p class="text-xs text-slate-400">Log attendance statuses. Monthly and daily wages are computed based on these logs.</p>
+        </div>
+        <form method="GET" action="" class="flex items-center gap-2">
+            <input type="hidden" name="view" value="attendance">
+            <input type="date" name="date" value="{{ log_date.strftime('%Y-%m-%d') }}" onchange="this.form.submit()" class="px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer">
+        </form>
+    </div>
+
+    <!-- Attendance Form -->
+    <form method="POST" action="{{ url_for('staff.attendance_save') }}" class="space-y-6">
+        <input type="hidden" name="date" value="{{ log_date.strftime('%Y-%m-%d') }}">
+
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse erp-table">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                            <th class="px-6 py-4">Employee</th>
+                            <th class="px-6 py-4">Role / Pay Model</th>
+                            <th class="px-6 py-4 text-center">Status</th>
+                            <th class="px-6 py-4">Remarks / Note</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                        {% for emp in employees %}
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                            <td class="px-6 py-4">
+                                <h4 class="font-semibold text-slate-900 dark:text-white">{{ emp.name }}</h4>
+                                <span class="text-[10px] text-slate-400 font-medium">{{ emp.designation }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-xs text-slate-500">{{ emp.salary_type }} ({{ emp.basic_salary | currency }})</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-center gap-3">
+                                    {% set current_status = logs_map.get(emp.id, 'Present') %}
+                                    
+                                    <!-- Present -->
+                                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                                        <input type="radio" name="status-{{ emp.id }}" value="Present" class="sr-only peer" {% if current_status == 'Present' %}checked{% endif %}>
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                                            Present
+                                        </span>
+                                    </label>
+
+                                    <!-- Half Day -->
+                                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                                        <input type="radio" name="status-{{ emp.id }}" value="Half Day" class="sr-only peer" {% if current_status == 'Half Day' %}checked{% endif %}>
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                                            Half Day
+                                        </span>
+                                    </label>
+
+                                    <!-- Absent -->
+                                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                                        <input type="radio" name="status-{{ emp.id }}" value="Absent" class="sr-only peer" {% if current_status == 'Absent' %}checked{% endif %}>
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                                            Absent
+                                        </span>
+                                    </label>
+
+                                    <!-- Leave -->
+                                    <label class="flex items-center gap-1 cursor-pointer select-none">
+                                        <input type="radio" name="status-{{ emp.id }}" value="Leave" class="sr-only peer" {% if current_status == 'Leave' %}checked{% endif %}>
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 peer-checked:bg-slate-500 peer-checked:text-white peer-checked:border-slate-500 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                                            Leave
+                                        </span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <input type="text" name="note-{{ emp.id }}" value="{{ notes_map.get(emp.id, '') }}" placeholder="Optional note..." class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500">
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-400">
+                                No active employees found. Add staff members first.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if employees %}
+        <div class="flex justify-end">
+            <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition-all cursor-pointer text-xs">
+                Save Attendance Register
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,455 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Employee | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Back Link -->
+    <a href="{{ url_for('staff.index') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 mb-6 transition-colors">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to HR Directory
+    </a>
+
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <i data-lucide="user-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold">{{ title }}</h3>
+                <p class="text-xs text-slate-400">Record and manage staff accounting profiles</p>
+            </div>
+        </div>
+
+        <form method="POST" action="" class="space-y-5">
+            {{ form.hidden_tag() }}
+
+            {% if form.__class__.__name__ == 'EmployeeForm' %}
+                
+                <!-- 1. Employee Profile Form -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="name">Employee Full Name</label>
+                    {{ form.name(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="e.g. Ramesh Kumar") }}
+                    {% for error in form.name.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="phone">Phone Number</label>
+                        {{ form.phone(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="+91 99000 00000") }}
+                        {% for error in form.phone.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="designation">Designation / Role</label>
+                        {{ form.designation(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="e.g. Head Chef") }}
+                        {% for error in form.designation.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="email">Email Address</label>
+                    {{ form.email(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="ramesh@saiprasad.com") }}
+                    {% for error in form.email.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="basic_salary">Daily Wage Rate (₹)</label>
+                        {{ form.basic_salary(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01") }}
+                        {% for error in form.basic_salary.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="status">Employment Status</label>
+                        <div class="relative">
+                            {{ form.status(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer") }}
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            {% elif form.__class__.__name__ == 'AdvanceForm' %}
+
+                <!-- 2. Salary Advance Form -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="employee_id">Select Employee</label>
+                    <div class="relative">
+                        {{ form.employee_id(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer") }}
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </span>
+                    </div>
+                    {% for error in form.employee_id.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="date">Advance Date</label>
+                        {{ form.date(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="date") }}
+                        {% for error in form.date.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="amount">Advance Amount (₹)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm font-semibold">₹</span>
+                            {{ form.amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01") }}
+                        </div>
+                        {% for error in form.amount.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="payment_method">Payment Method</label>
+                        <div class="relative">
+                            {{ form.payment_method(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer") }}
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </span>
+                        </div>
+                        {% for error in form.payment_method.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="description">Remarks / Details</label>
+                    {{ form.description(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", rows="3", placeholder="e.g. Festival advance") }}
+                </div>
+
+            {% elif form.__class__.__name__ == 'PayrollPaymentForm' %}
+
+                <!-- 3. Release Payroll Form -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="employee_id">Select Employee</label>
+                        <div class="relative">
+                            {{ form.employee_id(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer", id="payroll-employee-select") }}
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="month">Payment Month/Date Note</label>
+                        {{ form.month(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="e.g. June 2026, May 15-30, etc.", id="payroll-month-input") }}
+                        {% for error in form.month.errors %}
+                            <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Async Employee Wage Summary Helper Box -->
+                <div id="payroll-calc-info" class="hidden p-4 rounded-2xl bg-primary-50 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-950 text-xs space-y-2">
+                    <h4 class="font-bold text-primary-600 dark:text-primary-400 uppercase tracking-wider">Employee Wage Summary</h4>
+                    <div class="grid grid-cols-2 gap-4 text-slate-600 dark:text-slate-400">
+                        <div>
+                            <p>Daily Wage Rate: <span id="info-basic-rate" class="font-bold text-slate-900 dark:text-white">₹0.00</span></p>
+                        </div>
+                        <div>
+                            <p class="text-rose-500 font-semibold">Available Advance: <span id="info-advance" class="font-bold">₹0.00</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div id="payroll-days-present-container">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="days_present">Total Days Present</label>
+                        <div class="relative">
+                            {{ form.days_present(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="e.g. 26", type="number", step="0.5", id="payroll-days-present") }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="calculated_salary">Calculated Gross Salary</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm">₹</span>
+                            {{ form.calculated_salary(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01", id="payroll-gross") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="advance_adjusted">Deduct Advance</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm">₹</span>
+                            {{ form.advance_adjusted(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01", id="payroll-adjust") }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="deductions">Other Deductions</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm">₹</span>
+                            {{ form.deductions(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01", id="payroll-deductions") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="net_payable">Net Payable</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm">₹</span>
+                            {{ form.net_payable(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01", id="payroll-net") }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="paid_amount">Release Paid Amount (₹)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm">₹</span>
+                            {{ form.paid_amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01", id="payroll-paid") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="payment_method">Payment Method</label>
+                        <div class="relative">
+                            {{ form.payment_method(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer") }}
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            {% endif %}
+
+            {% if form.payment_method is defined and form.cash_amount is defined and form.online_amount is defined %}
+            <!-- Split amounts (only visible if Split is selected) -->
+            <div id="split-inputs" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="cash_amount">Cash Portion (₹)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm font-semibold">₹</span>
+                        {{ form.cash_amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="number", step="0.01", id="cash_amount") }}
+                    </div>
+                    {% for error in form.cash_amount.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="online_amount">Online Portion (₹)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm font-semibold">₹</span>
+                        {{ form.online_amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="number", step="0.01", id="online_amount") }}
+                    </div>
+                    {% for error in form.online_amount.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const paymentMethodSelect = document.getElementById("payment_method");
+                    const splitInputsDiv = document.getElementById("split-inputs");
+                    
+                    const amountInput = document.getElementById("amount") || document.getElementById("payroll-paid");
+                    const cashInput = document.getElementById("cash_amount");
+                    const onlineInput = document.getElementById("online_amount");
+                    
+                    if (!paymentMethodSelect || !splitInputsDiv || !amountInput || !cashInput || !onlineInput) {
+                        return;
+                    }
+                    
+                    function toggleSplitInputs() {
+                        if (paymentMethodSelect.value === "Split") {
+                            splitInputsDiv.classList.remove("hidden");
+                        } else {
+                            splitInputsDiv.classList.add("hidden");
+                        }
+                    }
+                    
+                    paymentMethodSelect.addEventListener("change", toggleSplitInputs);
+                    toggleSplitInputs(); // Run on load
+                    
+                    // Auto-calculation logic for Split payments
+                    function parseFloatVal(val) {
+                        const parsed = parseFloat(val);
+                        return isNaN(parsed) ? 0.0 : parsed;
+                    }
+                    
+                    let activeInput = null;
+                    
+                    amountInput.addEventListener("focus", () => { activeInput = "amount"; });
+                    cashInput.addEventListener("focus", () => { activeInput = "cash"; });
+                    onlineInput.addEventListener("focus", () => { activeInput = "online"; });
+                    
+                    function handleCalculation(event) {
+                        if (paymentMethodSelect.value !== "Split") return;
+                        
+                        const total = parseFloatVal(amountInput.value);
+                        const cash = parseFloatVal(cashInput.value);
+                        const online = parseFloatVal(onlineInput.value);
+                        
+                        if (activeInput === "amount") {
+                            if (online > 0 && total >= online) {
+                                cashInput.value = (total - online).toFixed(2);
+                            } else if (cash > 0 && total >= cash) {
+                                onlineInput.value = (total - cash).toFixed(2);
+                            } else if (total > 0) {
+                                cashInput.value = total.toFixed(2);
+                                onlineInput.value = "0.00";
+                            }
+                        } else if (activeInput === "online") {
+                            if (total > 0 && total >= online) {
+                                cashInput.value = (total - online).toFixed(2);
+                            } else if (cash > 0) {
+                                amountInput.value = (cash + online).toFixed(2);
+                            }
+                        } else if (activeInput === "cash") {
+                            if (total > 0 && total >= cash) {
+                                onlineInput.value = (total - cash).toFixed(2);
+                            } else if (online > 0) {
+                                amountInput.value = (cash + online).toFixed(2);
+                            }
+                        }
+                    }
+                    
+                    amountInput.addEventListener("input", handleCalculation);
+                    cashInput.addEventListener("input", handleCalculation);
+                    onlineInput.addEventListener("input", handleCalculation);
+                });
+            </script>
+            {% endif %}
+
+            <!-- Form Actions -->
+            <div class="flex gap-4 pt-3">
+                <a href="{{ url_for('staff.index') }}" class="w-1/2 text-center border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold py-3 px-4 rounded-xl text-sm transition-all">
+                    Cancel
+                </a>
+                {{ form.submit(class="w-1/2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-primary-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 cursor-pointer transition-all text-sm") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if form.__class__.__name__ == 'PayrollPaymentForm' %}
+<script>
+    // Asynchronous Payroll calculation scripts
+    const empSelect = document.getElementById('payroll-employee-select');
+    
+    const daysPresentContainer = document.getElementById('payroll-days-present-container');
+    const daysPresentInput = document.getElementById('payroll-days-present');
+    const grossInput = document.getElementById('payroll-gross');
+    const adjustInput = document.getElementById('payroll-adjust');
+    const dedInput = document.getElementById('payroll-deductions');
+    const netInput = document.getElementById('payroll-net');
+    const paidInput = document.getElementById('payroll-paid');
+    
+    const infoPanel = document.getElementById('payroll-calc-info');
+    const infoBasicRate = document.getElementById('info-basic-rate');
+    const infoAdvance = document.getElementById('info-advance');
+ 
+    let maxAdvance = 0;
+    let dailyWage = 0;
+ 
+    async function fetchPayrollDetails() {
+        const empId = empSelect.value;
+        
+        if (!empId) {
+            infoPanel.classList.add('hidden');
+            return;
+        }
+ 
+        try {
+            const res = await fetch(`{{ url_for('staff.payroll_calculate') }}?employee_id=${empId}`);
+            const data = await res.json();
+            
+            if (data.error) {
+                console.error(data.error);
+                infoPanel.classList.add('hidden');
+                return;
+            }
+ 
+            // Populate summary
+            infoBasicRate.innerText = `₹${data.basic_salary.toFixed(2)} / day`;
+            infoAdvance.innerText = `₹${data.advance_balance.toFixed(2)}`;
+            
+            maxAdvance = data.advance_balance;
+            dailyWage = data.basic_salary;
+ 
+            infoPanel.classList.remove('hidden');
+ 
+            // Always ensure days present is shown
+            daysPresentContainer.classList.remove('hidden');
+            if (!daysPresentInput.value || parseFloat(daysPresentInput.value) === 0) {
+                daysPresentInput.value = 0;
+            }
+            
+            calculateGross();
+ 
+        } catch (e) {
+            console.error(e);
+            infoPanel.classList.add('hidden');
+        }
+    }
+ 
+    function calculateGross() {
+        const days = parseFloat(daysPresentInput.value) || 0;
+        const gross = dailyWage * days;
+        grossInput.value = gross.toFixed(2);
+        
+        // auto-prefill advance adjustment to min(advance_balance, gross)
+        adjustInput.value = Math.min(maxAdvance, gross).toFixed(2);
+        dedInput.value = "0.00";
+        
+        recalculateNet();
+    }
+ 
+    function recalculateNet() {
+        const gross = parseFloat(grossInput.value) || 0;
+        const adjust = parseFloat(adjustInput.value) || 0;
+        const deductions = parseFloat(dedInput.value) || 0;
+ 
+        // Ensure user doesn't adjust more than available advance balance
+        if (adjust > maxAdvance) {
+            alert(`Adjustment exceeds available advance of ₹${maxAdvance.toFixed(2)}`);
+            adjustInput.value = maxAdvance.toFixed(2);
+            return recalculateNet();
+        }
+ 
+        const net = Math.max(0, gross - adjust - deductions);
+        netInput.value = net.toFixed(2);
+        paidInput.value = net.toFixed(2);  // Paid defaults to net
+    }
+ 
+    // Attach listeners
+    empSelect.addEventListener('change', fetchPayrollDetails);
+    
+    daysPresentInput.addEventListener('input', calculateGross);
+    grossInput.addEventListener('input', recalculateNet);
+    adjustInput.addEventListener('input', recalculateNet);
+    dedInput.addEventListener('input', recalculateNet);
+    
+    // Run on init if values are prefilled
+    if (empSelect.value) {
+        fetchPayrollDetails();
+    }
+
+</script>
+{% endif %}
+{% endblock %}

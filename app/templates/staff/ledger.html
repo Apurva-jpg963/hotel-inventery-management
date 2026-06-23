@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Ledger | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Employee Ledger Statement{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Selector Card (Non-printable) -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm print:hidden">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-2">Select Employee</label>
+        <div class="flex items-center gap-3">
+            <div class="relative flex-1 max-w-md">
+                <select id="employee-selector" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 appearance-none cursor-pointer">
+                    <option value="">-- Choose an Employee --</option>
+                    {% for e in employees %}
+                    <option value="{{ e.id }}" {% if selected_employee and selected_employee.id == e.id %}selected{% endif %}>
+                        {{ e.name }} (Outstanding: {{ e.outstanding_salary | currency }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </span>
+            </div>
+            
+            {% if selected_employee %}
+            <button onclick="window.print()" class="flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold py-2.5 px-4 rounded-xl transition-all">
+                <i data-lucide="printer" class="w-4 h-4"></i> Print Statement
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Empty State if no Employee selected -->
+    {% if not selected_employee %}
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 max-w-3xl mx-auto mt-6">
+        <div class="flex flex-col items-center gap-3">
+            <i data-lucide="book-open" class="w-12 h-12 text-slate-300 dark:text-slate-700"></i>
+            <h4 class="font-bold text-slate-700 dark:text-slate-300 text-base">No Employee Selected</h4>
+            <p class="text-xs max-w-md">Select an employee from the dropdown above to view their detailed transaction history, salary accruals, cash advances, payments, and current running outstanding balances.</p>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Printable Statement Header (Print Only) -->
+    <div class="hidden print:block mb-6 border-b pb-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">{{ selected_employee.name }}</h1>
+                <p class="text-xs text-slate-500 mt-1">Employee Account Ledger Statement</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Generated: 2026-06-15 23:15</p>
+            </div>
+            <div class="text-right">
+                <h2 class="text-lg font-bold text-slate-800">Hotel Saiprasad</h2>
+                <p class="text-[10px] text-slate-500">Human Resources & Payroll</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Profile Info Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Employee Info</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white">{{ selected_employee.name }}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Designation: {{ selected_employee.designation }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Daily Wage: {{ selected_employee.basic_salary | currency }}</p>
+        </div>
+        <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Contact Info</span>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Phone: {{ selected_employee.phone or 'N/A' }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Email: {{ selected_employee.email or 'N/A' }}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50 dark:bg-slate-950 rounded-2xl p-3 border border-slate-100 dark:border-slate-900">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Advance Balance</span>
+                <h3 class="text-sm font-bold mt-1 text-rose-500">
+                    {{ selected_employee.advance_balance | currency }}
+                </h3>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-950 rounded-2xl p-3 border border-slate-100 dark:border-slate-900">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Net Outstanding</span>
+                <h3 class="text-sm font-bold mt-1 {% if selected_employee.outstanding_salary > 0 %}text-amber-500{% else %}text-slate-400{% endif %}">
+                    {{ selected_employee.outstanding_salary | currency }}
+                </h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger Entries Table -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Transaction Type</th>
+                        <th class="px-6 py-4 font-mono">Reference</th>
+                        <th class="px-6 py-4">Description</th>
+                        <th class="px-6 py-4 text-right">Debit (Owed)</th>
+                        <th class="px-6 py-4 text-right">Credit (Paid)</th>
+                        <th class="px-6 py-4 text-right">Running Balance</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for entry in ledger_entries %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ entry.date | shortdate }}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold
+                                {% if 'Accrued' in entry.type or 'Advance Salary' in entry.type %}
+                                    bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400
+                                {% else %}
+                                    bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400
+                                {% endif %}">
+                                {{ entry.type }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 font-mono text-slate-500 text-xs">{{ entry.reference }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ entry.description }}">
+                            {{ entry.description }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-semibold text-rose-500">
+                            {% if entry.debit > 0 %}
+                                {{ entry.debit | currency }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right font-semibold text-emerald-500">
+                            {% if entry.credit > 0 %}
+                                {{ entry.credit | currency }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">
+                            {{ entry.running_balance | currency }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                            No ledger transactions recorded for this employee.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Bind change listener to employee-selector
+    const selector = document.getElementById('employee-selector');
+    if (selector) {
+        selector.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val) {
+                window.location.href = `{{ url_for('staff.index', view='ledgers') }}&employee_id=${val}`;
+            } else {
+                window.location.href = `{{ url_for('staff.index', view='ledgers') }}`;
+            }
+        });
+    }
+</script>
+{% endblock %}

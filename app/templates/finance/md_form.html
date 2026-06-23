@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | Hotel Saiprasad ERP{% endblock %}
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+
+    <a href="{{ url_for('finance.index', tab='md') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 mb-6 transition-colors">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to MD Sir Account
+    </a>
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
+
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-md">
+                <i data-lucide="user-square" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold">MD Sir Account Entry</h3>
+                <p class="text-xs text-slate-400">Record money taken or added by the owner</p>
+            </div>
+        </div>
+
+        <form method="POST" action="" class="space-y-6">
+            {{ form.hidden_tag() }}
+
+            <!-- Transaction Type: Withdraw or Deposit -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Transaction Type</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="transaction_type" value="Withdraw" class="peer sr-only"
+                            {% if form.transaction_type.data == 'Withdraw' or not form.transaction_type.data %}checked{% endif %}>
+                        <div class="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-950/20 transition-all">
+                            <div class="p-2 rounded-xl bg-rose-100 dark:bg-rose-950/40 text-rose-500">
+                                <i data-lucide="arrow-up-circle" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">Withdraw</span>
+                            <span class="text-[10px] text-slate-400 text-center">Owner took money<br>(Balance goes down)</span>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="transaction_type" value="Deposit" class="peer sr-only"
+                            {% if form.transaction_type.data == 'Deposit' %}checked{% endif %}>
+                        <div class="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 dark:peer-checked:bg-emerald-950/20 transition-all">
+                            <div class="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-500">
+                                <i data-lucide="arrow-down-circle" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-200">Deposit</span>
+                            <span class="text-[10px] text-slate-400 text-center">Owner added money<br>(Balance goes up)</span>
+                        </div>
+                    </label>
+                </div>
+                {% for error in form.transaction_type.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- Payment Method: Cash or Online -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Payment Method</label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="payment_method" value="Cash" class="peer sr-only"
+                            {% if form.payment_method.data == 'Cash' or not form.payment_method.data %}checked{% endif %}>
+                        <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 dark:peer-checked:bg-yellow-950/20 transition-all">
+                            <i data-lucide="banknote" class="w-5 h-5 text-yellow-500"></i>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Cash</span>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="payment_method" value="UPI" class="peer sr-only"
+                            {% if form.payment_method.data == 'UPI' %}checked{% endif %}>
+                        <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-950/20 transition-all">
+                            <i data-lucide="smartphone" class="w-5 h-5 text-blue-500"></i>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">UPI</span>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="payment_method" value="Bank" class="peer sr-only"
+                            {% if form.payment_method.data == 'Bank' %}checked{% endif %}>
+                        <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-950/20 transition-all">
+                            <i data-lucide="building-2" class="w-5 h-5 text-indigo-500"></i>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Bank</span>
+                        </div>
+                    </label>
+                    <label class="relative cursor-pointer">
+                        <input type="radio" name="payment_method" value="Split" class="peer sr-only"
+                            {% if form.payment_method.data == 'Split' %}checked{% endif %}>
+                        <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 peer-checked:border-rose-500 peer-checked:bg-rose-50 dark:peer-checked:bg-rose-950/20 transition-all">
+                            <i data-lucide="split" class="w-5 h-5 text-rose-500"></i>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Split</span>
+                        </div>
+                    </label>
+                </div>
+                {% for error in form.payment_method.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Amount (₹)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 font-semibold text-sm pointer-events-none">₹</span>
+                    {{ form.amount(class="w-full pl-8 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", placeholder="0.00", type="number", step="0.01", min="0.01") }}
+                </div>
+                {% for error in form.amount.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- Date -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Date</label>
+                {{ form.date(class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="date") }}
+                {% for error in form.date.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Remarks (Optional)</label>
+                {{ form.description(class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", rows="3", placeholder="e.g. Petty cash for personal use / Capital added for hotel renovation") }}
+                {% for error in form.description.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            {% if form.payment_method is defined and form.cash_amount is defined and form.online_amount is defined %}
+            <!-- Split amounts (only visible if Split is selected) -->
+            <div id="split-inputs" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="cash_amount">Cash Portion (₹)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm font-semibold">₹</span>
+                        {{ form.cash_amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="number", step="0.01", id="cash_amount") }}
+                    </div>
+                    {% for error in form.cash_amount.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="online_amount">Online Portion (₹)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm font-semibold">₹</span>
+                        {{ form.online_amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="number", step="0.01", id="online_amount") }}
+                    </div>
+                    {% for error in form.online_amount.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
+                    const splitInputsDiv = document.getElementById("split-inputs");
+                    
+                    const amountInput = document.getElementById("amount");
+                    const cashInput = document.getElementById("cash_amount");
+                    const onlineInput = document.getElementById("online_amount");
+                    
+                    if (!paymentMethodRadios.length || !splitInputsDiv || !amountInput || !cashInput || !onlineInput) {
+                        return;
+                    }
+                    
+                    function getSelectedPaymentMethod() {
+                        let selected = "";
+                        paymentMethodRadios.forEach(radio => {
+                            if (radio.checked) {
+                                selected = radio.value;
+                            }
+                        });
+                        return selected;
+                    }
+                    
+                    function toggleSplitInputs() {
+                        if (getSelectedPaymentMethod() === "Split") {
+                            splitInputsDiv.classList.remove("hidden");
+                        } else {
+                            splitInputsDiv.classList.add("hidden");
+                        }
+                    }
+                    
+                    paymentMethodRadios.forEach(radio => {
+                        radio.addEventListener("change", toggleSplitInputs);
+                    });
+                    toggleSplitInputs(); // Run on load
+                    
+                    // Auto-calculation logic for Split payments
+                    function parseFloatVal(val) {
+                        const parsed = parseFloat(val);
+                        return isNaN(parsed) ? 0.0 : parsed;
+                    }
+                    
+                    let activeInput = null;
+                    
+                    amountInput.addEventListener("focus", () => { activeInput = "amount"; });
+                    cashInput.addEventListener("focus", () => { activeInput = "cash"; });
+                    onlineInput.addEventListener("focus", () => { activeInput = "online"; });
+                    
+                    function handleCalculation(event) {
+                        if (getSelectedPaymentMethod() !== "Split") return;
+                        
+                        const total = parseFloatVal(amountInput.value);
+                        const cash = parseFloatVal(cashInput.value);
+                        const online = parseFloatVal(onlineInput.value);
+                        
+                        if (activeInput === "amount") {
+                            if (online > 0 && total >= online) {
+                                cashInput.value = (total - online).toFixed(2);
+                            } else if (cash > 0 && total >= cash) {
+                                onlineInput.value = (total - cash).toFixed(2);
+                            } else if (total > 0) {
+                                cashInput.value = total.toFixed(2);
+                                onlineInput.value = "0.00";
+                            }
+                        } else if (activeInput === "online") {
+                            if (total > 0 && total >= online) {
+                                cashInput.value = (total - online).toFixed(2);
+                            } else if (cash > 0) {
+                                amountInput.value = (cash + online).toFixed(2);
+                            }
+                        } else if (activeInput === "cash") {
+                            if (total > 0 && total >= cash) {
+                                onlineInput.value = (total - cash).toFixed(2);
+                            } else if (online > 0) {
+                                amountInput.value = (cash + online).toFixed(2);
+                            }
+                        }
+                    }
+                    
+                    amountInput.addEventListener("input", handleCalculation);
+                    cashInput.addEventListener("input", handleCalculation);
+                    onlineInput.addEventListener("input", handleCalculation);
+                });
+            </script>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="flex gap-4 pt-2">
+                <a href="{{ url_for('finance.index', tab='md') }}" class="w-1/2 text-center border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold py-3 px-4 rounded-xl text-sm transition-all">
+                    Cancel
+                </a>
+                {{ form.submit(class="w-1/2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-amber-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 cursor-pointer transition-all text-sm") }}
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

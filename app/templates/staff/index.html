@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Staff Management | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Human Resources Directory</h3>
+            <p class="text-xs text-slate-400">Track and manage employee profiles, contact directories, and active payroll models</p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="{{ url_for('staff.add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> Add Employee
+            </a>
+
+            <a href="{{ url_for('staff.index', view='payroll') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="banknote" class="w-4 h-4"></i> Release Payroll
+            </a>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 overflow-x-auto">
+        <a href="{{ url_for('staff.index', view='employees') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'employees' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Active Staff List
+        </a>
+        <a href="{{ url_for('staff.index', view='payroll') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'payroll' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Payroll & Advances
+        </a>
+        <a href="{{ url_for('staff.index', view='ledgers') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'ledgers' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Employee Ledgers
+        </a>
+    </div>
+
+    <!-- Search bar -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm flex items-center justify-between">
+        <form method="GET" action="" class="w-full max-w-md">
+            <input type="hidden" name="view" value="{{ view }}">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </span>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search staff by name or role..." class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary-500">
+            </div>
+        </form>
+    </div>
+
+    <!-- Employees Table -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Name</th>
+                        <th class="px-6 py-4">Designation</th>
+                        <th class="px-6 py-4">Daily Wage</th>
+                        <th class="px-6 py-4">Advance balance</th>
+                        <th class="px-6 py-4">Outstanding Salary</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for item in employees %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
+                            <a href="{{ url_for('staff.index', view='ledgers', employee_id=item.id) }}" class="hover:underline text-primary-500">
+                                {{ item.name }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.designation }}</td>
+                        <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ item.basic_salary | currency }}</td>
+                        <td class="px-6 py-4 font-bold {% if item.advance_balance > 0 %}text-rose-500{% else %}text-slate-400{% endif %}">
+                            {{ item.advance_balance | currency }}
+                        </td>
+                        <td class="px-6 py-4 font-bold {% if item.outstanding_salary > 0 %}text-amber-500{% else %}text-slate-400{% endif %}">
+                            {{ item.outstanding_salary | currency }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold
+                                {% if item.status == 'Active' %}
+                                    bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400
+                                {% else %}
+                                    bg-slate-100 dark:bg-slate-850 text-slate-400 dark:text-slate-500
+                                {% endif %}">
+                                {{ item.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ url_for('staff.index', view='ledgers', employee_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="View Account Statement">
+                                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{{ url_for('staff.edit', employee_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="Edit">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('staff.delete', employee_id=item.id) }}" onsubmit="return confirm('Deleting this employee will delete all attendance, advances and payroll logs. Proceed?');" class="inline">
+                                    <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                            No employees found. Click "Add Employee" to create a profile.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

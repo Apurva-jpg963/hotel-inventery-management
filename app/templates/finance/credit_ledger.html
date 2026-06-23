@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Credit Ledger - {{ selected_party.party_name }} | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Credit Ledger Statement{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Header Back links (Non-printable) -->
+    <div class="flex items-center justify-between print:hidden">
+        <a href="{{ url_for('finance.index', tab='credit') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Credit Directory
+        </a>
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold py-2.5 px-4 rounded-xl transition-all">
+                <i data-lucide="printer" class="w-4 h-4"></i> Print Statement
+            </button>
+            <a href="{{ url_for('finance.credit_transaction_add', party_id=selected_party.id) }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="plus" class="w-4 h-4"></i> Record Transaction
+            </a>
+        </div>
+    </div>
+
+    <!-- Printable Header (Print Only) -->
+    <div class="hidden print:block mb-6 border-b pb-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-xl font-bold text-slate-900">{{ selected_party.party_name }}</h1>
+                <p class="text-xs text-slate-500 mt-1">Credit Account Statement (Lena-Dena Ledger)</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Generated: 2026-06-15 23:15</p>
+            </div>
+            <div class="text-right">
+                <h2 class="text-lg font-bold text-slate-800">Hotel Saiprasad</h2>
+                <p class="text-[10px] text-slate-500">Finance & Accounting ERP</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Party Details Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Party Profile</span>
+            <h4 class="font-bold text-base text-slate-900 dark:text-white">{{ selected_party.party_name }}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Phone: {{ selected_party.phone or 'N/A' }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Address: {{ selected_party.address or 'N/A' }}</p>
+        </div>
+        <div class="bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-950 rounded-2xl p-4 flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider block">Bill Pending (Lena)</span>
+            <h3 class="text-lg font-bold mt-2 text-indigo-600 dark:text-indigo-400">
+                {{ selected_party.receivable_balance | currency }}
+            </h3>
+            <span class="text-[9px] text-slate-400 mt-1 block">Money they owe to us</span>
+        </div>
+        <div class="bg-fuchsia-50/50 dark:bg-fuchsia-950/10 border border-fuchsia-100/50 dark:border-fuchsia-950 rounded-2xl p-4 flex flex-col justify-between">
+            <span class="text-[10px] font-bold text-fuchsia-500 dark:text-fuchsia-400 uppercase tracking-wider block">Bill Received (Dena)</span>
+            <h3 class="text-lg font-bold mt-2 text-fuchsia-600 dark:text-fuchsia-400">
+                {{ selected_party.payable_balance | currency }}
+            </h3>
+            <span class="text-[9px] text-slate-400 mt-1 block">Money we owe to them</span>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse erp-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Transaction Type</th>
+                        <th class="px-6 py-4">Channel</th>
+                        <th class="px-6 py-4">Description</th>
+                        <th class="px-6 py-4 text-right">Amount</th>
+                        <th class="px-6 py-4 text-right">Bill Pending Bal</th>
+                        <th class="px-6 py-4 text-right">Bill Received Bal</th>
+                        <th class="px-6 py-4 text-right print:hidden">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                    {% for entry in ledger_entries %}
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 font-medium">{{ entry.date | shortdate }}</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold
+                                {% if 'Pending' in entry.type %}
+                                    bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400
+                                {% else %}
+                                    bg-fuchsia-50 dark:bg-fuchsia-950/20 text-fuchsia-600 dark:text-fuchsia-400
+                                {% endif %}">
+                                {{ entry.type }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-slate-500">{{ entry.payment_method }}</td>
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 max-w-xs truncate" title="{{ entry.description }}">
+                            {{ entry.description }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">{{ entry.amount | currency }}</td>
+                        <td class="px-6 py-4 text-right font-semibold text-indigo-500">
+                            {{ entry.running_bill_pending | currency }}
+                        </td>
+                        <td class="px-6 py-4 text-right font-semibold text-fuchsia-500">
+                            {{ entry.running_bill_received | currency }}
+                        </td>
+                        <td class="px-6 py-4 text-right print:hidden">
+                            <form method="POST" action="{{ url_for('finance.credit_transaction_delete', tx_id=entry.id) }}" onsubmit="return confirm('Delete this transaction? Balances will revert.');">
+                                <button type="submit" class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+                            No ledger logs recorded for this credit account.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
