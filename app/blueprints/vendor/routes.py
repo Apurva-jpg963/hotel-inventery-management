@@ -4,7 +4,7 @@ from app import db
 from app.blueprints.vendor import vendor_bp
 from app.blueprints.vendor.forms import VendorForm, VendorBillForm, VendorPaymentForm
 from app.models import Vendor, VendorBill, VendorPayment, CashBook
-from datetime import datetime
+from datetime import datetime, date
 
 @vendor_bp.route('/')
 @login_required
@@ -48,51 +48,76 @@ def index():
         vendor_id = request.args.get('vendor_id', type=int)
         
         selected_vendor = None
-        ledger_entries = []
+        display_entries = []
+        tot_billed = 0.0
+        tot_paid = 0.0
         
         if vendor_id:
-            selected_vendor = Vendor.query.get_or_404(vendor_id)
-            # Fetch all bills and payments for this vendor
-            bills = VendorBill.query.filter_by(vendor_id=vendor_id).all()
-            payments = VendorPayment.query.filter_by(vendor_id=vendor_id).all()
-            
-            # Combine into a chronological ledger
-            for b in bills:
-                ledger_entries.append({
-                    'date': b.date,
-                    'type': 'Purchase (Bill)',
-                    'reference': b.bill_number,
-                    'description': b.description or 'Credit Purchase',
-                    'increase': b.amount,
-                    'decrease': 0.0,
-                    'sort_id': f"bill-{b.id}"
-                })
-            for p in payments:
-                ledger_entries.append({
-                    'date': p.date,
-                    'type': 'Payment',
-                    'reference': p.payment_method,
-                    'description': p.description or 'Cash/UPI Outflow',
-                    'increase': 0.0,
-                    'decrease': p.amount,
-                    'sort_id': f"pay-{p.id}"
-                })
+            selected_vendor = Vendor.query.get(vendor_id)
+            if selected_vendor:
+                # Fetch all bills and payments for this vendor
+                bills = VendorBill.query.filter_by(vendor_id=vendor_id).all()
+                payments = VendorPayment.query.filter_by(vendor_id=vendor_id).all()
                 
-            # Sort chronologically by date
-            ledger_entries.sort(key=lambda x: (x['date'], x['sort_id']))
-            
-            # Calculate running outstanding balance
-            running = 0.0
-            for entry in ledger_entries:
-                running += (entry['increase'] - entry['decrease'])
-                entry['running_balance'] = running
+                def parse_date(d_val):
+                    if not d_val:
+                        return date.min
+                    if isinstance(d_val, str):
+                        try:
+                            clean_str = d_val.split(' ')[0].split('T')[0]
+                            return datetime.strptime(clean_str, '%Y-%m-%d').date()
+                        except Exception:
+                            return date.min
+                    if isinstance(d_val, datetime):
+                        return d_val.date()
+                    if isinstance(d_val, date):
+                        return d_val
+                    return date.min
+
+                ledger_entries = []
+                # Combine into a chronological ledger
+                for b in bills:
+                    ledger_entries.append({
+                        'date': parse_date(b.date),
+                        'type': 'Purchase (Bill)',
+                        'reference': b.bill_number or '-',
+                        'description': b.description or 'Credit Purchase',
+                        'increase': float(b.amount or 0.0),
+                        'decrease': 0.0,
+                        'sort_id': f"bill-{b.id}"
+                    })
+                for p in payments:
+                    ledger_entries.append({
+                        'date': parse_date(p.date),
+                        'type': 'Payment',
+                        'reference': p.payment_method or 'Cash',
+                        'description': p.description or 'Cash/UPI Outflow',
+                        'increase': 0.0,
+                        'decrease': float(p.amount or 0.0),
+                        'sort_id': f"pay-{p.id}"
+                    })
+                    
+                # Sort chronologically by date
+                ledger_entries.sort(key=lambda x: (x['date'], x['sort_id']))
+                
+                # Calculate running outstanding balance
+                running = 0.0
+                for entry in ledger_entries:
+                    tot_billed += entry['increase']
+                    tot_paid += entry['decrease']
+                    running += (entry['increase'] - entry['decrease'])
+                    entry['running_balance'] = running
+
+                display_entries = list(reversed(ledger_entries))
 
         return render_template(
             'vendor/ledger.html',
             view=view,
             vendors=vendors,
             selected_vendor=selected_vendor,
-            ledger_entries=ledger_entries,
+            ledger_entries=display_entries,
+            tot_billed=tot_billed,
+            tot_paid=tot_paid,
             datetime_now=datetime.now()
         )
 

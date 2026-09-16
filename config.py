@@ -8,7 +8,7 @@ class Config:
     
     # Custom constants
     INCOME_CATEGORIES = [
-        'Room Revenue',
+        'Old Bill Received',
         'Restaurant Revenue',
         'Banquet Revenue',
         'Other Revenue'

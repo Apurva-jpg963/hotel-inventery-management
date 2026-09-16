@@ -16,6 +16,19 @@
             <a href="{{ url_for('vendor.add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add Vendor
             </a>
+            {% if view == 'vendors' %}
+            <a href="{{ url_for('finance.bulk_add', type='vendor') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
+                <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
+            </a>
+            {% elif view == 'bills' %}
+            <a href="{{ url_for('finance.bulk_add', type='vendor_bill') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
+                <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
+            </a>
+            {% elif view == 'payments' %}
+            <a href="{{ url_for('finance.bulk_add', type='vendor_payment') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
+                <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
+            </a>
+            {% endif %}
             <a href="{{ url_for('vendor.bill_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="file-plus" class="w-4 h-4"></i> Record Bill
             </a>
@@ -35,6 +48,9 @@
         </a>
         <a href="{{ url_for('vendor.index', view='payments') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'payments' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
             Cash Payments
+        </a>
+        <a href="{{ url_for('vendor.index', view='ledgers') }}" class="px-4 py-2.5 border-b-2 font-semibold text-xs transition-all tracking-wider uppercase whitespace-nowrap {% if view == 'ledgers' %}border-primary-500 text-primary-500{% else %}border-transparent text-slate-400 hover:text-slate-600{% endif %}">
+            Vendor Ledger
         </a>
     </div>
 
@@ -57,9 +73,10 @@
         <!-- View 1: Vendors -->
         {% if view == 'vendors' %}
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse erp-table">
+            <table class="w-full text-left border-collapse erp-table" data-type="vendor">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 w-10"><input type="checkbox" class="select-all-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent"></th>
                         <th class="px-6 py-4">Name</th>
                         <th class="px-6 py-4">Contact Person</th>
                         <th class="px-6 py-4">Phone</th>
@@ -71,6 +88,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                     {% for item in vendors %}
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 w-10"><input type="checkbox" class="row-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent" value="{{ item.id }}"></td>
                         <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                             <a href="{{ url_for('vendor.index', view='ledgers', vendor_id=item.id) }}" class="hover:underline text-primary-500">
                                 {{ item.name }}
@@ -112,9 +130,10 @@
         <!-- View 2: Bills -->
         {% elif view == 'bills' %}
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse erp-table">
+            <table class="w-full text-left border-collapse erp-table" data-type="vendor_bill">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 w-10"><input type="checkbox" class="select-all-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent"></th>
                         <th class="px-6 py-4">Bill Date</th>
                         <th class="px-6 py-4">Supplier Name</th>
                         <th class="px-6 py-4">Bill No</th>
@@ -126,6 +145,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                     {% for item in bills %}
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 w-10"><input type="checkbox" class="row-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent" value="{{ item.id }}"></td>
                         <td class="px-6 py-4 font-medium">{{ item.date | shortdate }}</td>
                         <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">{{ item.vendor.name }}</td>
                         <td class="px-6 py-4 font-mono text-slate-500">{{ item.bill_number }}</td>
@@ -153,9 +173,10 @@
         <!-- View 3: Payments -->
         {% elif view == 'payments' %}
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse erp-table">
+            <table class="w-full text-left border-collapse erp-table" data-type="vendor_payment">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 w-10"><input type="checkbox" class="select-all-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent"></th>
                         <th class="px-6 py-4">Payment Date</th>
                         <th class="px-6 py-4">Supplier Name</th>
                         <th class="px-6 py-4">Payment Channel</th>
@@ -167,6 +188,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                     {% for item in payments %}
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 w-10"><input type="checkbox" class="row-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent" value="{{ item.id }}"></td>
                         <td class="px-6 py-4 font-medium">{{ item.date | shortdate }}</td>
                         <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">{{ item.vendor.name }}</td>
                         <td class="px-6 py-4 text-slate-500">{{ item.payment_method }}</td>

@@ -61,7 +61,7 @@
                     <i data-lucide="trending-up" class="w-6 h-6"></i>
                 </div>
                 <h4 class="font-bold text-base text-slate-900 dark:text-white">Revenue Workbook</h4>
-                <p class="text-xs text-slate-400">Export a dedicated revenue spreadsheet with category summaries (Room Revenue, Restaurant Revenue, Banquet Revenue, etc.) and audit trails.</p>
+                <p class="text-xs text-slate-400">Export a dedicated revenue spreadsheet with category summaries (Old Bill Received, Restaurant Revenue, Banquet Revenue, etc.) and audit trails.</p>
             </div>
             <div class="pt-6">
                 <a href="{{ url_for('reports.export', type='revenue') }}" class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
@@ -130,6 +130,22 @@
             <div class="pt-6">
                 <a href="{{ url_for('reports.export', type='credit') }}" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                     <i data-lucide="download" class="w-4 h-4"></i> Download Credit Book
+                </a>
+            </div>
+        </div>
+
+        <!-- 7. Finance Deposit & Withdrawal Ledger Workbook -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between group">
+            <div class="space-y-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-600 flex items-center justify-center text-white shadow-md">
+                    <i data-lucide="book-marked" class="w-6 h-6"></i>
+                </div>
+                <h4 class="font-bold text-base text-slate-900 dark:text-white">Finance Accounting Ledger</h4>
+                <p class="text-xs text-slate-400">Generates and exports the single transaction accounting ledger containing Date, Description, Category, Payment Method, Deposit, Withdrawal, and Running Balance.</p>
+            </div>
+            <div class="pt-6">
+                <a href="{{ url_for('reports.export', type='finance') }}" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Finance Ledger
                 </a>
             </div>
         </div>

@@ -37,7 +37,7 @@ def index():
 
     # Pagination
     page = request.args.get('page', 1, type=int)
-    pagination = query.order_by(Income.date.desc(), Income.id.desc()).paginate(page=page, per_page=15, error_out=False)
+    pagination = query.order_by(Income.date.desc(), Income.id.desc()).paginate(page=page, per_page=100, error_out=False)
     incomes = pagination.items
 
     return render_template(

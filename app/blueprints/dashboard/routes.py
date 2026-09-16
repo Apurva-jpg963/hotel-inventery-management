@@ -43,7 +43,15 @@ def index():
     overall_balance = cash_balance + bank_balance
     savings_balance = Savings.get_balance()
     vendor_outstanding = db.session.query(db.func.sum(Vendor.outstanding_balance)).scalar() or 0.0
-    salary_outstanding = db.session.query(db.func.sum(Employee.outstanding_salary)).scalar() or 0.0
+
+    # Recalculate employee balances for accurate staff totals
+    all_emps = Employee.query.all()
+    for e in all_emps:
+        e.recalculate_balances()
+    salary_outstanding = sum(e.outstanding_salary for e in all_emps)
+    staff_advance_loan = sum(e.advance_balance for e in all_emps)
+    net_staff_balance = salary_outstanding - staff_advance_loan
+
     total_bank_installments = db.session.query(db.func.sum(LoanRepayment.principal_paid + LoanRepayment.interest_paid)).scalar() or 0.0
     md_sir_balance = MDSirAccount.get_balance()
 
@@ -239,6 +247,8 @@ def index():
         savings_balance=savings_balance,
         vendor_outstanding=vendor_outstanding,
         salary_outstanding=salary_outstanding,
+        staff_advance_loan=staff_advance_loan,
+        net_staff_balance=net_staff_balance,
         total_bank_installments=total_bank_installments,
         bill_pending=bill_pending,
         bill_received=bill_received,

@@ -13,6 +13,9 @@
             <p class="text-xs text-slate-400">Track and manage employee profiles, contact directories, and active payroll models</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+            <a href="{{ url_for('finance.bulk_add', type='employee') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
+                <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
+            </a>
             <a href="{{ url_for('staff.add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add Employee
             </a>
@@ -52,14 +55,16 @@
     <!-- Employees Table -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse erp-table">
+            <table class="w-full text-left border-collapse erp-table" data-type="employee">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 w-10"><input type="checkbox" class="select-all-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent"></th>
                         <th class="px-6 py-4">Name</th>
                         <th class="px-6 py-4">Designation</th>
                         <th class="px-6 py-4">Daily Wage</th>
-                        <th class="px-6 py-4">Advance balance</th>
-                        <th class="px-6 py-4">Outstanding Salary</th>
+                        <th class="px-6 py-4">Advance Loan (Need to Pay Back)</th>
+                        <th class="px-6 py-4">Unpaid Salary (Owed to Staff)</th>
+                        <th class="px-6 py-4">Net Position (+ We Pay / - Employee Pays)</th>
                         <th class="px-6 py-4">Status</th>
                         <th class="px-6 py-4 text-right">Actions</th>
                     </tr>
@@ -67,6 +72,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                     {% for item in employees %}
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 w-10"><input type="checkbox" class="row-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent" value="{{ item.id }}"></td>
                         <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                             <a href="{{ url_for('staff.index', view='ledgers', employee_id=item.id) }}" class="hover:underline text-primary-500">
                                 {{ item.name }}
@@ -74,11 +80,26 @@
                         </td>
                         <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.designation }}</td>
                         <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ item.basic_salary | currency }}</td>
-                        <td class="px-6 py-4 font-bold {% if item.advance_balance > 0 %}text-rose-500{% else %}text-slate-400{% endif %}">
+                        <td class="px-6 py-4 font-bold {% if item.advance_balance > 0 %}text-amber-600 dark:text-amber-400{% else %}text-slate-400{% endif %}">
                             {{ item.advance_balance | currency }}
                         </td>
-                        <td class="px-6 py-4 font-bold {% if item.outstanding_salary > 0 %}text-amber-500{% else %}text-slate-400{% endif %}">
+                        <td class="px-6 py-4 font-bold {% if item.outstanding_salary > 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-slate-400{% endif %}">
                             {{ item.outstanding_salary | currency }}
+                        </td>
+                        <td class="px-6 py-4 font-bold">
+                            {% if item.net_balance > 0.01 %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                    + {{ item.net_balance | currency }} (We Pay)
+                                </span>
+                            {% elif item.net_balance < -0.01 %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                    - {{ (item.net_balance | abs) | currency }} (Employee Owes)
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                    ₹0.00 (Settled)
+                                </span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold
@@ -95,8 +116,8 @@
                                 <a href="{{ url_for('staff.index', view='ledgers', employee_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="View Account Statement">
                                     <i data-lucide="book-open" class="w-4 h-4"></i>
                                 </a>
-                                <a href="{{ url_for('staff.edit', employee_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="Edit">
-                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                <a href="{{ url_for('staff.edit', employee_id=item.id) }}" class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/60 transition-colors" title="Edit Employee Profile">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit
                                 </a>
                                 <form method="POST" action="{{ url_for('staff.delete', employee_id=item.id) }}" onsubmit="return confirm('Deleting this employee will delete all attendance, advances and payroll logs. Proceed?');" class="inline">
                                     <button type="submit" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete">

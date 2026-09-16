@@ -1,0 +1,472 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Transaction Entry | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Bulk Transaction Entry{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Header Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-lg font-bold">Multi-Row Input Grid</h3>
+            <p class="text-xs text-slate-400">Add multiple transaction records dynamically and save them all at once.</p>
+        </div>
+        
+        <!-- Type Selection Dropdown -->
+        <div class="flex items-center gap-3">
+            <label class="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Transaction Type:</label>
+            <div class="relative min-w-[200px]">
+                <select id="bulk-type-select" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary-500 appearance-none cursor-pointer">
+                    <option value="income" {% if default_type == 'income' %}selected{% endif %}>Revenue / Incomes</option>
+                    <option value="expense" {% if default_type == 'expense' %}selected{% endif %}>Expenses</option>
+                    <option value="savings" {% if default_type == 'savings' %}selected{% endif %}>Bank Savings logs</option>
+                    <option value="loan_repayment" {% if default_type == 'loan_repayment' %}selected{% endif %}>Loan Repayments</option>
+                    <option value="md_sir" {% if default_type == 'md_sir' %}selected{% endif %}>MD Sir Account logs</option>
+                    <option value="credit_transaction" {% if default_type == 'credit_transaction' %}selected{% endif %}>Credit (Lena-Dena) logs</option>
+                    <option value="vendor_bill" {% if default_type == 'vendor_bill' %}selected{% endif %}>Vendor bills / Invoices</option>
+                    <option value="vendor_payment" {% if default_type == 'vendor_payment' %}selected{% endif %}>Vendor payments</option>
+                    <option value="staff_advance" {% if default_type == 'staff_advance' %}selected{% endif %}>Staff Advances</option>
+                    <option value="employee" {% if default_type == 'employee' %}selected{% endif %}>Staff Employees (Profiles)</option>
+                    <option value="vendor" {% if default_type == 'vendor' %}selected{% endif %}>Vendors / Suppliers (Profiles)</option>
+                    <option value="credit_party" {% if default_type == 'credit_party' %}selected{% endif %}>Credit Parties / Lena-Dena (Profiles)</option>
+                </select>
+                <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid Form -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden p-6">
+        <div class="overflow-x-auto min-h-[250px]">
+            <table class="w-full text-left border-collapse erp-table text-xs">
+                <thead>
+                    <tr id="grid-header" class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <!-- Dynamic Columns Appended Here -->
+                    </tr>
+                </thead>
+                <tbody id="grid-body" class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <!-- Dynamic Rows Appended Here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Grid Actions Footer -->
+        <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-850 pt-5 mt-5">
+            <button type="button" id="btn-add-row" class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2 px-4 rounded-xl transition-all cursor-pointer">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Row
+            </button>
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('dashboard.index') }}" class="border border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 text-xs font-semibold py-2 px-4 rounded-xl transition-all">
+                    Cancel
+                </a>
+                <button type="button" id="btn-save-all" class="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2 px-6 rounded-xl shadow-md transition-all cursor-pointer">
+                    <i data-lucide="check" class="w-4 h-4"></i> Save All Entries
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Context data passed from Flask
+    const vendors = {{ vendors | tojson }};
+    const employees = {{ employees | tojson }};
+    const parties = {{ parties | tojson }};
+    const expenseCats = {{ expense_cats | tojson }};
+    const incomeCats = {{ income_cats | tojson }};
+
+    const typeSelect = document.getElementById('bulk-type-select');
+    const headerRow = document.getElementById('grid-header');
+    const gridBody = document.getElementById('grid-body');
+    const addRowBtn = document.getElementById('btn-add-row');
+    const saveAllBtn = document.getElementById('btn-save-all');
+
+    // Schema mapping for types
+    const columnsSchema = {
+        income: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Category', key: 'category', type: 'select', choices: incomeCats },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        expense: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Type', key: 'expense_type', type: 'select', choices: ['Hotel', 'Other', 'Development'] },
+            { label: 'Category', key: 'category', type: 'autocomplete', choices: expenseCats },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        savings: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Tx Type', key: 'transaction_type', type: 'select', choices: ['Deposit', 'Withdrawal'] },
+            { label: 'Bank Name', key: 'bank_name', type: 'text' },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        loan_repayment: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Bank / Lender', key: 'bank_name', type: 'text' },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        md_sir: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Tx Type', key: 'transaction_type', type: 'select', choices: ['Deposit', 'Withdraw'] },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        credit_transaction: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Credit Party', key: 'credit_account_id', type: 'select_object', choices: parties },
+            { label: 'Tx Type', key: 'transaction_type', type: 'select_object', choices: [
+                { id: 'Given', name: 'Given (Bill Pending Lena)' },
+                { id: 'Received', name: 'Received (Clear Lena Bill)' },
+                { id: 'Taken', name: 'Taken (Bill Payable Dena)' },
+                { id: 'Paid', name: 'Paid (Clear Dena Bill)' }
+            ] },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        vendor_bill: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Vendor', key: 'vendor_id', type: 'select_object', choices: vendors },
+            { label: 'Bill No', key: 'bill_number', type: 'text' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        vendor_payment: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Vendor', key: 'vendor_id', type: 'select_object', choices: vendors },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        staff_advance: [
+            { label: 'Date', key: 'date', type: 'date' },
+            { label: 'Staff Employee', key: 'employee_id', type: 'select_object', choices: employees },
+            { label: 'Payment Method', key: 'payment_method', type: 'payment' },
+            { label: 'Amount (₹)', key: 'amount', type: 'amount' },
+            { label: 'Cash Portion (₹)', key: 'cash_amount', type: 'split_portion' },
+            { label: 'Online Portion (₹)', key: 'online_amount', type: 'split_portion' },
+            { label: 'Description', key: 'description', type: 'text' }
+        ],
+        employee: [
+            { label: 'Name *', key: 'name', type: 'text' },
+            { label: 'Designation', key: 'designation', type: 'text' },
+            { label: 'Salary/Wage (₹) *', key: 'basic_salary', type: 'amount' },
+            { label: 'Salary Type', key: 'salary_type', type: 'select', choices: ['Monthly', 'Daily'] },
+            { label: 'Phone', key: 'phone', type: 'text' },
+            { label: 'Email', key: 'email', type: 'text' }
+        ],
+        vendor: [
+            { label: 'Supplier Name *', key: 'name', type: 'text' },
+            { label: 'Contact Person', key: 'contact_person', type: 'text' },
+            { label: 'Phone', key: 'phone', type: 'text' },
+            { label: 'Email', key: 'email', type: 'text' },
+            { label: 'Address', key: 'address', type: 'text' }
+        ],
+        credit_party: [
+            { label: 'Party Name *', key: 'name', type: 'text' },
+            { label: 'Contact Phone', key: 'phone', type: 'text' }
+        ]
+    };
+
+    // Helper to get today's date formatted YYYY-MM-DD
+    function getTodayString() {
+        const d = new Date();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${d.getFullYear()}-${month}-${day}`;
+    }
+
+    // Render columns in headers and clean table body
+    function buildGridHeaders(type) {
+        const schema = columnsSchema[type];
+        let headersHTML = '';
+        schema.forEach(col => {
+            headersHTML += `<th class="px-4 py-3">${col.label}</th>`;
+        });
+        headersHTML += `<th class="px-4 py-3 text-right">Actions</th>`;
+        headerRow.innerHTML = headersHTML;
+        gridBody.innerHTML = '';
+        
+        // Add 3 default rows
+        for(let i=0; i<3; i++) {
+            addNewRow(type);
+        }
+    }
+
+    // Append a new row to the table
+    function addNewRow(type) {
+        const schema = columnsSchema[type];
+        const rowId = 'row-' + Math.random().toString(36).substring(2, 9);
+        const tr = document.createElement('tr');
+        tr.id = rowId;
+        tr.className = 'hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors';
+
+        let cellsHTML = '';
+        schema.forEach(col => {
+            cellsHTML += `<td class="px-4 py-3 align-middle">`;
+            if (col.type === 'date') {
+                cellsHTML += `<input type="date" data-key="${col.key}" value="${getTodayString()}" class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">`;
+            } else if (col.type === 'text') {
+                cellsHTML += `<input type="text" data-key="${col.key}" placeholder="Enter details..." class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">`;
+            } else if (col.type === 'amount') {
+                cellsHTML += `<input type="number" step="0.01" data-key="${col.key}" placeholder="0.00" class="row-amount-input w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 font-semibold text-slate-800 dark:text-slate-100">`;
+            } else if (col.type === 'split_portion') {
+                cellsHTML += `<input type="number" step="0.01" data-key="${col.key}" value="0.00" disabled class="row-split-input w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-400 dark:text-slate-600 rounded-lg focus:outline-none cursor-not-allowed font-semibold">`;
+            } else if (col.type === 'select') {
+                cellsHTML += `<select data-key="${col.key}" class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 appearance-none">`;
+                col.choices.forEach(ch => {
+                    cellsHTML += `<option value="${ch}">${ch}</option>`;
+                });
+                cellsHTML += `</select>`;
+            } else if (col.type === 'select_object') {
+                cellsHTML += `<select data-key="${col.key}" class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 appearance-none">`;
+                col.choices.forEach(ch => {
+                    cellsHTML += `<option value="${ch.id}">${ch.name}</option>`;
+                });
+                cellsHTML += `</select>`;
+            } else if (col.type === 'autocomplete') {
+                cellsHTML += `
+                    <div class="relative">
+                        <input type="text" data-key="${col.key}" placeholder="Type category..." list="dl-${rowId}" class="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
+                        <datalist id="dl-${rowId}">
+                            ${col.choices.map(c => `<option value="${c}">`).join('')}
+                        </datalist>
+                    </div>
+                `;
+            } else if (col.type === 'payment') {
+                cellsHTML += `
+                    <select data-key="${col.key}" class="row-payment-select w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 appearance-none">
+                        <option value="Cash">Cash</option>
+                        <option value="UPI">UPI / QR Code</option>
+                        <option value="Card">Card Payment</option>
+                        <option value="Bank">Direct Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Split">Split (Cash & Online)</option>
+                    </select>
+                `;
+            }
+            cellsHTML += `</td>`;
+        });
+
+        cellsHTML += `
+            <td class="px-4 py-3 align-middle text-right print:hidden">
+                <button type="button" class="btn-delete-row p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-500 transition-colors" title="Delete Row">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                </button>
+            </td>
+        `;
+
+        tr.innerHTML = cellsHTML;
+        gridBody.appendChild(tr);
+
+        // Bind split payment toggles for this row
+        const paymentSelect = tr.querySelector('.row-payment-select');
+        const splitInputs = tr.querySelectorAll('.row-split-input');
+        const amountInput = tr.querySelector('.row-amount-input');
+
+        if (paymentSelect) {
+            paymentSelect.addEventListener('change', (e) => {
+                const isSplit = e.target.value === 'Split';
+                splitInputs.forEach(input => {
+                    input.disabled = !isSplit;
+                    if (isSplit) {
+                        input.classList.remove('bg-slate-100', 'dark:bg-slate-900', 'text-slate-400', 'dark:text-slate-600', 'cursor-not-allowed');
+                        input.classList.add('bg-slate-50', 'dark:bg-slate-950', 'focus:ring-1', 'focus:ring-primary-500');
+                    } else {
+                        input.classList.add('bg-slate-100', 'dark:bg-slate-900', 'text-slate-400', 'dark:text-slate-600', 'cursor-not-allowed');
+                        input.classList.remove('bg-slate-50', 'dark:bg-slate-950', 'focus:ring-1', 'focus:ring-primary-500');
+                        input.value = '0.00';
+                    }
+                });
+            });
+        }
+
+        // Add event listener to delete button
+        tr.querySelector('.btn-delete-row').addEventListener('click', () => {
+            if (gridBody.querySelectorAll('tr').length > 1) {
+                tr.remove();
+            } else {
+                alert("You must keep at least one row in the grid.");
+            }
+        });
+    }
+
+    // Setup Type Change Event
+    typeSelect.addEventListener('change', (e) => {
+        buildGridHeaders(e.target.value);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    // Setup Add Row button click
+    addRowBtn.addEventListener('click', () => {
+        addNewRow(typeSelect.value);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    // Save All Entries handler
+    saveAllBtn.addEventListener('click', async () => {
+        const type = typeSelect.value;
+        const rows = [];
+        const trs = gridBody.querySelectorAll('tr');
+        
+        let hasErrors = false;
+        let errorMsg = '';
+
+        trs.forEach((tr, index) => {
+            const rowData = {};
+            const inputs = tr.querySelectorAll('[data-key]');
+            
+            inputs.forEach(input => {
+                const key = input.getAttribute('data-key');
+                rowData[key] = input.value;
+            });
+
+            // Validation
+            if (type !== 'employee' && type !== 'vendor' && type !== 'credit_party') {
+                if (!rowData.amount || parseFloat(rowData.amount) <= 0) {
+                    hasErrors = true;
+                    errorMsg = `Row ${index + 1}: Amount must be greater than 0.`;
+                }
+
+                if (rowData.payment_method === 'Split') {
+                    const total = parseFloat(rowData.amount);
+                    const cash = parseFloat(rowData.cash_amount || 0);
+                    const online = parseFloat(rowData.online_amount || 0);
+                    if (Math.abs((cash + online) - total) > 0.01) {
+                        hasErrors = true;
+                        errorMsg = `Row ${index + 1}: Cash portion (${cash}) + Online portion (${online}) must sum exactly to total amount (${total}).`;
+                    }
+                }
+
+                // Category validation if required
+                if (type === 'income' && !rowData.category) {
+                    hasErrors = true;
+                    errorMsg = `Row ${index + 1}: Category is required.`;
+                }
+                if (type === 'expense' && !rowData.category) {
+                    hasErrors = true;
+                    errorMsg = `Row ${index + 1}: Category is required.`;
+                }
+                if (type === 'savings' && !rowData.bank_name) {
+                    hasErrors = true;
+                    errorMsg = `Row ${index + 1}: Bank Name is required.`;
+                }
+                if (type === 'loan_repayment' && !rowData.bank_name) {
+                    hasErrors = true;
+                    errorMsg = `Row ${index + 1}: Bank / Lender is required.`;
+                }
+                if (type === 'vendor_bill' && !rowData.bill_number) {
+                    hasErrors = true;
+                    errorMsg = `Row ${index + 1}: Bill Number is required.`;
+                }
+            } else {
+                if (type === 'employee') {
+                    if (!rowData.name) {
+                        hasErrors = true;
+                        errorMsg = `Row ${index + 1}: Employee Name is required.`;
+                    }
+                    if (!rowData.basic_salary || parseFloat(rowData.basic_salary) < 0) {
+                        hasErrors = true;
+                        errorMsg = `Row ${index + 1}: Salary/Wage is required and must be 0 or more.`;
+                    }
+                }
+                if (type === 'vendor') {
+                    if (!rowData.name) {
+                        hasErrors = true;
+                        errorMsg = `Row ${index + 1}: Supplier Name is required.`;
+                    }
+                }
+                if (type === 'credit_party') {
+                    if (!rowData.name) {
+                        hasErrors = true;
+                        errorMsg = `Row ${index + 1}: Party Name is required.`;
+                    }
+                }
+            }
+
+            rows.push(rowData);
+        });
+
+        if (hasErrors) {
+            alert(errorMsg);
+            return;
+        }
+
+        // Show spinner / disable button
+        saveAllBtn.disabled = true;
+        saveAllBtn.innerHTML = `<span class="animate-spin mr-1.5">⚡</span> Saving...`;
+
+        try {
+            const response = await fetch("{{ url_for('finance.bulk_add') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type, rows })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Determine redirect path
+                let redirectPath = "{{ url_for('dashboard.index') }}";
+                if (type === 'income') redirectPath = "{{ url_for('income.index') }}";
+                else if (type === 'expense') redirectPath = "{{ url_for('expense.index') }}";
+                else if (type === 'savings') redirectPath = "{{ url_for('finance.index') }}?tab=savings";
+                else if (type === 'loan_repayment') redirectPath = "{{ url_for('finance.index') }}?tab=loans";
+                else if (type === 'md_sir') redirectPath = "{{ url_for('finance.index') }}?tab=md";
+                else if (type === 'credit_transaction') redirectPath = "{{ url_for('finance.index') }}?tab=credit";
+                else if (type === 'vendor_bill') redirectPath = "{{ url_for('vendor.index') }}?view=bills";
+                else if (type === 'vendor_payment') redirectPath = "{{ url_for('vendor.index') }}?view=payments";
+                else if (type === 'staff_advance') redirectPath = "{{ url_for('staff.index') }}?view=payroll";
+                else if (type === 'employee') redirectPath = "{{ url_for('staff.index') }}?view=employees";
+                else if (type === 'vendor') redirectPath = "{{ url_for('vendor.index') }}?view=vendors";
+                else if (type === 'credit_party') redirectPath = "{{ url_for('finance.index') }}?tab=credit";
+
+                window.location.href = redirectPath;
+            } else {
+                alert("Error: " + result.message);
+                saveAllBtn.disabled = false;
+                saveAllBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save All Entries`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        } catch (err) {
+            alert("Network error: Could not save entries.");
+            saveAllBtn.disabled = false;
+            saveAllBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Save All Entries`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+    });
+
+    // Initialize layout
+    buildGridHeaders(typeSelect.value);
+</script>
+{% endblock %}

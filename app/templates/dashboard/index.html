@@ -109,13 +109,45 @@
 
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 group">
         <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Staff Advances Given</span>
+            <div class="p-2.5 rounded-xl bg-amber-50 text-amber-500 group-hover:scale-110 transition-transform">
+                <i data-lucide="hand-coins" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <h3 class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ staff_advance_loan | currency }}</h3>
+        <p class="text-[10px] text-slate-400 mt-2">Unrecovered staff advances (Staff owes hotel)</p>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 group">
+        <div class="flex items-center justify-between mb-3">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Salary Outstanding</span>
             <div class="p-2.5 rounded-xl bg-violet-50 text-violet-500 group-hover:scale-110 transition-transform">
                 <i data-lucide="banknote" class="w-5 h-5"></i>
             </div>
         </div>
         <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{{ salary_outstanding | currency }}</h3>
-        <p class="text-[10px] text-slate-400 mt-2">Unpaid staff payroll amount</p>
+        <p class="text-[10px] text-slate-400 mt-2">Unpaid staff payroll (Hotel owes staff)</p>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 group">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Net Staff Balance</span>
+            <div class="p-2.5 rounded-xl {% if net_staff_balance >= 0 %}bg-emerald-50 text-emerald-500{% else %}bg-rose-50 text-rose-500{% endif %} group-hover:scale-110 transition-transform">
+                <i data-lucide="scale" class="w-5 h-5"></i>
+            </div>
+        </div>
+        <h3 class="text-2xl font-bold {% if net_staff_balance > 0 %}text-emerald-600 dark:text-emerald-400{% elif net_staff_balance < 0 %}text-amber-600 dark:text-amber-400{% else %}text-slate-500{% endif %}">
+            {% if net_staff_balance < 0 %}- {% endif %}{{ (net_staff_balance | abs) | currency }}
+        </h3>
+        <p class="text-[10px] font-semibold mt-2 {% if net_staff_balance > 0 %}text-emerald-600{% elif net_staff_balance < 0 %}text-amber-600{% else %}text-slate-400{% endif %}">
+            {% if net_staff_balance > 0 %}
+                + We have to pay staff
+            {% elif net_staff_balance < 0 %}
+                - Staff has to pay hotel
+            {% else %}
+                Fully Settled
+            {% endif %}
+        </p>
     </div>
 
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:shadow-lg transition-all duration-300 group">

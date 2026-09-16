@@ -18,6 +18,9 @@ instance/
 .idea/
 .vscode/
 
+# Zip archives
+*.zip
+
 # OS files
 .DS_Store
 Thumbs.db

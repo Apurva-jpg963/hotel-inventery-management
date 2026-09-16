@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
-{% block title %}Payroll & Advances | Hotel Saiprasad Finance ERP{% endblock %}
-{% block header_title %}Staff Payroll & Salary Advances{% endblock %}
+{% block title %}Payroll & Salary Management | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}Salary Management & Payroll System{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -9,10 +9,16 @@
     <!-- Top Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h3 class="text-lg font-bold">Payroll Registers</h3>
-            <p class="text-xs text-slate-400">Manage monthly salary payments, cash advances, adjustments, and pending balances</p>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Staff Payroll Registers</h3>
+            <p class="text-xs text-slate-400">Manage gross salaries, advance adjustments, deductions, net payable, payments, and remaining balances</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ url_for('reports.export', type='employees') }}" class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
+            </a>
+            <button onclick="document.getElementById('resetMonthModal').classList.remove('hidden')" class="flex items-center gap-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-600 hover:text-white dark:text-rose-400 dark:hover:text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all border border-rose-200 dark:border-rose-900/50">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Close & Reset Month
+            </button>
             <a href="{{ url_for('staff.advance_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="plus-circle" class="w-4 h-4"></i> Issue Salary Advance
             </a>
@@ -22,51 +28,173 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <!-- Top Summary KPI Cards: Advance Loans vs Unpaid Salaries vs Net Position -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest block">Total Staff Advance Loans</span>
+                <h3 class="text-xl font-bold mt-1 text-amber-700 dark:text-amber-300">{{ tot_emp_advance_loan | currency }}</h3>
+                <p class="text-[10px] text-slate-400 mt-1">Advance money taken by staff (to be recovered from future salaries)</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                <i data-lucide="hand-coins" class="w-6 h-6"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block">Total Unpaid Salary Outstanding</span>
+                <h3 class="text-xl font-bold mt-1 text-emerald-700 dark:text-emerald-300">{{ tot_emp_unpaid_salary | currency }}</h3>
+                <p class="text-[10px] text-slate-400 mt-1">Unpaid salary balance owed to employees by the hotel</p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                <i data-lucide="wallet" class="w-6 h-6"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold uppercase tracking-widest block {% if tot_net_staff_balance > 0 %}text-emerald-600 dark:text-emerald-400{% elif tot_net_staff_balance < 0 %}text-amber-600 dark:text-amber-400{% else %}text-slate-400{% endif %}">Net Overall Staff Balance</span>
+                <h3 class="text-xl font-bold mt-1 {% if tot_net_staff_balance > 0 %}text-emerald-700 dark:text-emerald-300{% elif tot_net_staff_balance < 0 %}text-amber-700 dark:text-amber-300{% else %}text-slate-500{% endif %}">
+                    {% if tot_net_staff_balance < 0 %}- {% endif %}{{ (tot_net_staff_balance | abs) | currency }}
+                </h3>
+                <p class="text-[10px] font-bold mt-1 {% if tot_net_staff_balance > 0 %}text-emerald-600{% elif tot_net_staff_balance < 0 %}text-amber-600{% else %}text-slate-400{% endif %}">
+                    {% if tot_net_staff_balance > 0 %}
+                        + We have to pay employees
+                    {% elif tot_net_staff_balance < 0 %}
+                        - Employees have to pay hotel
+                    {% else %}
+                        Fully Settled
+                    {% endif %}
+                </p>
+            </div>
+            <div class="w-12 h-12 rounded-2xl {% if tot_net_staff_balance >= 0 %}bg-emerald-500/10 text-emerald-600 dark:text-emerald-400{% else %}bg-amber-500/10 text-amber-600 dark:text-amber-400{% endif %} flex items-center justify-center font-bold">
+                <i data-lucide="scale" class="w-6 h-6"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Layout -->
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        <!-- Column 1 & 2: Payroll Sheets (Left) -->
-        <div class="xl:col-span-2 space-y-6">
+        <!-- Column 1, 2, 3: Released Payroll Sheets Table (Left) -->
+        <div class="xl:col-span-3 space-y-6">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <h4 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider">Released Payroll Sheets</h4>
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider">Payroll Register Table</h4>
+                    <span class="text-xs font-semibold text-slate-400">{{ payrolls | length }} Sheets Logged</span>
                 </div>
+
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse erp-table">
+                    <table class="w-full text-left border-collapse erp-table" data-type="payroll">
                         <thead>
-                            <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
-                                <th class="px-6 py-4">Employee</th>
-                                <th class="px-6 py-4">Period / Note</th>
-                                <th class="px-6 py-4 text-center">Days</th>
-                                <th class="px-6 py-4 text-right">Gross Salary</th>
-                                <th class="px-6 py-4 text-right">Advance Adj</th>
-                                <th class="px-6 py-4 text-right">Net Payable</th>
-                                <th class="px-6 py-4 text-right">Paid</th>
-                                <th class="px-6 py-4 text-right">Pending</th>
-                                <th class="px-6 py-4 text-right">Action</th>
+                            <tr class="bg-slate-900 text-white uppercase text-[10px] font-bold tracking-wider">
+                                <th class="px-4 py-4">Date</th>
+                                <th class="px-4 py-4">Employee</th>
+                                <th class="px-4 py-4 text-right bg-blue-900/60 text-blue-200">Gross Salary (₹)</th>
+                                <th class="px-4 py-4 text-right bg-amber-900/60 text-amber-200">Advance Adj (₹)</th>
+                                <th class="px-4 py-4 text-right bg-rose-900/60 text-rose-200">Other Ded (₹)</th>
+                                <th class="px-4 py-4 text-right bg-emerald-900/60 text-emerald-200">Net Payable (₹)</th>
+                                <th class="px-4 py-4 text-right bg-orange-900/60 text-orange-200">Amount Paid (₹)</th>
+                                <th class="px-4 py-4">Payment Method</th>
+                                <th class="px-4 py-4 text-right bg-purple-900/60 text-purple-200">Remaining (₹)</th>
+                                <th class="px-4 py-4 text-center">Status</th>
+                                <th class="px-4 py-4">Remarks</th>
+                                <th class="px-4 py-4 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
                             {% for item in payrolls %}
-                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
-                                <td class="px-6 py-4">
-                                    <h4 class="font-semibold text-slate-900 dark:text-white">{{ item.employee.name }}</h4>
-                                    <span class="text-[10px] text-slate-400 font-medium">{{ item.employee.designation }}</span>
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition-colors">
+                                <!-- Date -->
+                                <td class="px-4 py-4 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                    {{ (item.date or item.created_at) | shortdate }}
                                 </td>
-                                <td class="px-6 py-4 text-slate-500 text-xs font-semibold">{{ item.month }}</td>
-                                <td class="px-6 py-4 text-center font-semibold text-slate-700 dark:text-slate-350">
-                                    {{ item.days_present or 0 }}
+
+                                <!-- Employee -->
+                                <td class="px-4 py-4">
+                                    <h4 class="font-bold text-slate-900 dark:text-white">{{ item.employee.name }}</h4>
+                                    <span class="text-[10px] text-slate-400 font-medium block">{{ item.employee.designation }} ({{ item.month }})</span>
+                                    {% if item.employee.advance_balance > 0.01 %}
+                                    <span class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                                        <i data-lucide="hand-coins" class="w-3 h-3"></i> Unadjusted Advance: {{ item.employee.advance_balance | currency }}
+                                    </span>
+                                    {% endif %}
                                 </td>
-                                <td class="px-6 py-4 text-right">{{ item.calculated_salary | currency }}</td>
-                                <td class="px-6 py-4 text-right text-rose-500">-{{ item.advance_adjusted | currency }}</td>
-                                <td class="px-6 py-4 text-right font-semibold text-slate-900 dark:text-white">{{ item.net_payable | currency }}</td>
-                                <td class="px-6 py-4 text-right text-emerald-500 font-bold">{{ item.paid_amount | currency }}</td>
-                                <td class="px-6 py-4 text-right font-bold {% if item.pending_amount > 0 %}text-amber-500{% else %}text-slate-400{% endif %}">
-                                    {{ item.pending_amount | currency }}
+
+                                <!-- Gross Salary - Light Blue -->
+                                <td class="px-4 py-4 text-right font-bold bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                                    {{ item.calculated_salary | currency }}
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex items-center justify-end gap-2">
+
+                                <!-- Advance Adjusted - Light Yellow -->
+                                <td class="px-4 py-4 text-right font-bold bg-amber-50/50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                                    {{ item.advance_adjusted | currency }}
+                                </td>
+
+                                <!-- Other Deductions - Light Red -->
+                                <td class="px-4 py-4 text-right font-bold bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                                    {{ item.deductions | currency }}
+                                </td>
+
+                                <!-- Net Payable - Light Green -->
+                                <td class="px-4 py-4 text-right font-bold bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                    {{ item.net_payable | currency }}
+                                </td>
+
+                                <!-- Amount Paid - Light Orange -->
+                                <td class="px-4 py-4 text-right font-bold bg-orange-50/50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 whitespace-nowrap">
+                                    {{ item.paid_amount | currency }}
+                                </td>
+
+                                <!-- Payment Method -->
+                                <td class="px-4 py-4 font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                    {{ item.payment_method or 'Cash' }}
+                                </td>
+
+                                <!-- Remaining - Light Purple -->
+                                <td class="px-4 py-4 text-right font-bold bg-purple-50/50 dark:bg-purple-950/20 whitespace-nowrap">
+                                    {% if item.pending_amount > 0.01 %}
+                                        <div class="text-purple-700 dark:text-purple-300 font-bold text-xs">+ {{ item.pending_amount | currency }}</div>
+                                        <span class="text-[9px] font-semibold text-purple-500 uppercase tracking-tight block">We Pay Employee</span>
+                                    {% else %}
+                                        <div class="text-slate-400 font-medium text-xs">₹0.00</div>
+                                        <span class="text-[9px] font-medium text-slate-400 block">Settled</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Status Badge -->
+                                <td class="px-4 py-4 text-center whitespace-nowrap">
+                                    {% if item.payment_status == 'Paid' or item.pending_amount <= 0.01 %}
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                            Paid
+                                        </span>
+                                    {% elif item.payment_status == 'Partially Paid' or item.payment_status == 'Partial' or (item.paid_amount > 0 and item.pending_amount > 0) %}
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300 border border-orange-300 dark:border-orange-700">
+                                            Partially Paid
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                                            Pending
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Remarks -->
+                                <td class="px-4 py-4 text-slate-500 dark:text-slate-400 text-xs">
+                                    {{ item.remarks or 'Regular Salary' }}
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="px-4 py-4 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        {% if item.advance_adjusted <= 0.01 and item.employee.advance_balance > 0.01 %}
+                                        <form method="POST" action="{{ url_for('staff.payroll_auto_adjust', payroll_id=item.id) }}" class="inline">
+                                            <button type="submit" class="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1" title="Auto-Deduct Advance">
+                                                <i data-lucide="scissors" class="w-3 h-3"></i> Apply Advance
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                         {% if item.pending_amount > 0 %}
-                                        <a href="{{ url_for('staff.payroll_pay', payroll_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors animate-pulse" title="Record Part-Payment">
+                                        <a href="{{ url_for('staff.payroll_pay', payroll_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-emerald-600 hover:text-emerald-700 transition-colors animate-pulse" title="Make Payment">
                                             <i data-lucide="wallet" class="w-4 h-4"></i>
                                         </a>
                                         {% endif %}
@@ -80,22 +208,50 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="9" class="px-6 py-12 text-center text-slate-400">
-                                    No payroll sheets released yet. Click "Release Payroll" to run calculation logs.
+                                <td colspan="12" class="px-6 py-12 text-center text-slate-400">
+                                    No payroll sheets released yet. Click "Release Payroll" to add employee salary records.
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
+
+                        <!-- Bottom Totals Row -->
+                        <tfoot class="bg-slate-100 dark:bg-slate-950 font-bold border-t-2 border-slate-300 dark:border-slate-700">
+                            <tr>
+                                <td colspan="2" class="px-4 py-4 uppercase text-slate-900 dark:text-white text-xs">TOTALS</td>
+                                <td class="px-4 py-4 text-right text-blue-600 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/30 text-xs">
+                                    {{ total_gross | currency }}
+                                </td>
+                                <td class="px-4 py-4 text-right text-amber-600 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/30 text-xs">
+                                    {{ total_advance | currency }}
+                                </td>
+                                <td class="px-4 py-4 text-right text-rose-600 dark:text-rose-400 bg-rose-100/50 dark:bg-rose-900/30 text-xs">
+                                    {{ total_deductions | currency }}
+                                </td>
+                                <td class="px-4 py-4 text-right text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 text-xs">
+                                    {{ total_net | currency }}
+                                </td>
+                                <td class="px-4 py-4 text-right text-orange-600 dark:text-orange-400 bg-orange-100/50 dark:bg-orange-900/30 text-xs">
+                                    {{ total_paid | currency }}
+                                </td>
+                                <td class="px-4 py-4"></td>
+                                <td class="px-4 py-4 text-right text-purple-600 dark:text-purple-400 bg-purple-100/50 dark:bg-purple-900/30 text-xs">
+                                    {{ total_remaining | currency }}
+                                </td>
+                                <td colspan="3" class="px-4 py-4"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- Column 3: Salary Advances (Right) -->
+        <!-- Column 4: Salary Advances Side Panel (Right) -->
         <div class="space-y-6">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <h4 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider">Salary Advances Log</h4>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ advances | length }} Advances</span>
                 </div>
                 <div class="divide-y divide-slate-100 dark:divide-slate-800 max-h-[500px] overflow-y-auto">
                     {% for item in advances %}
@@ -126,4 +282,70 @@
     </div>
 
 </div>
+
+<!-- Reset Month Modal -->
+<div id="resetMonthModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Close & Reset Month</h3>
+                    <p class="text-xs text-slate-400">Prepare staff payroll for the new month</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('resetMonthModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+            <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
+                <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-amber-600 mt-0.5"></i>
+                <div>
+                    <strong class="font-bold block">Important Notice:</strong>
+                    This will clear out the current month's salary records, advance payouts, and attendance logs, resetting all staff balances to <strong>₹0.00</strong> for the new month.
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-start gap-2.5">
+                <i data-lucide="check-circle" class="w-5 h-5 shrink-0 text-emerald-600 mt-0.5"></i>
+                <div>
+                    <strong class="font-bold block">Staff Profiles Kept Safe:</strong>
+                    All staff names, roles, daily rates, and contact details will remain completely intact in the system.
+                </div>
+            </div>
+        </div>
+
+        <form id="resetMonthForm" method="POST" action="{{ url_for('staff.reset_month') }}">
+            <div class="flex flex-col gap-2.5 pt-2">
+                <button type="button" onclick="exportAndReset()" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all text-xs">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> (Recommended) Export Excel & Reset Month
+                </button>
+                
+                <button type="submit" onclick="return confirm('Are you sure you want to reset all staff salary and advance records without downloading Excel?');" class="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-all text-xs">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Month Only (No Download)
+                </button>
+
+                <button type="button" onclick="document.getElementById('resetMonthModal').classList.add('hidden')" class="w-full text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium py-2 px-4 transition-all text-xs">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function exportAndReset() {
+    // 1. Trigger export workbook download
+    window.location.href = "{{ url_for('reports.export', type='employees') }}";
+    
+    // 2. Submit reset form after short delay to let download start
+    setTimeout(function() {
+        document.getElementById('resetMonthForm').submit();
+    }, 1500);
+}
+</script>
 {% endblock %}

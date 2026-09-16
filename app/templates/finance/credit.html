@@ -13,6 +13,9 @@
             <p class="text-xs text-slate-400">Manage separate ledgers for money lent (Bill Pending - Lena) and money borrowed (Bill Received - Dena)</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ url_for('finance.bulk_add', type='credit_party') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
+                <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
+            </a>
             <a href="{{ url_for('finance.credit_party_add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add Credit Party
             </a>
@@ -54,9 +57,10 @@
     <!-- Credit Parties Table Card -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse erp-table">
+            <table class="w-full text-left border-collapse erp-table" data-type="credit_party">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 w-10"><input type="checkbox" class="select-all-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent"></th>
                         <th class="px-6 py-4">Party Name</th>
                         <th class="px-6 py-4">Contact Phone</th>
                         <th class="px-6 py-4 text-right">Lena (Bill Pending)</th>
@@ -67,14 +71,27 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                     {% for item in accounts %}
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 w-10"><input type="checkbox" class="row-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent" value="{{ item.id }}"></td>
                         <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                             <a href="{{ url_for('finance.index', tab='credit', party_id=item.id) }}" class="hover:underline text-primary-500">
                                 {{ item.party_name }}
                             </a>
                         </td>
                         <td class="px-6 py-4 text-slate-500 dark:text-slate-400">{{ item.phone or '-' }}</td>
-                        <td class="px-6 py-4 text-right font-bold text-indigo-500">{{ item.receivable_balance | currency }}</td>
-                        <td class="px-6 py-4 text-right font-bold text-fuchsia-500">{{ item.payable_balance | currency }}</td>
+                        <td class="px-6 py-4 text-right font-bold text-indigo-500">
+                            {% if item.receivable_balance > 0 %}
+                                {{ item.receivable_balance | currency }}
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50">Clear</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right font-bold text-fuchsia-500">
+                            {% if item.payable_balance > 0 %}
+                                {{ item.payable_balance | currency }}
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50">Clear</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ url_for('finance.index', tab='credit', party_id=item.id) }}" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary-500 transition-colors" title="View Statement Ledger">

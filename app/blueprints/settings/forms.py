@@ -18,8 +18,15 @@ class ChangePasswordForm(FlaskForm):
 
 
 class EditProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=64)])
     email = StringField('Email Address', validators=[DataRequired(), Email(), Length(max=120)])
     submit = SubmitField('Update Profile')
+
+    def validate_username(self, username):
+        if username.data != current_user.username:
+            user = User.query.filter_by(username=username.data).first()
+            if user:
+                raise ValidationError('Username is already taken by another account.')
 
     def validate_email(self, email):
         if email.data != current_user.email:

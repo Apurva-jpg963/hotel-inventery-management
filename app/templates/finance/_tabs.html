@@ -1,0 +1,58 @@
+<div class="border-b border-slate-200 dark:border-slate-800">
+    <nav class="-mb-px flex space-x-6 overflow-x-auto">
+        <a href="{{ url_for('finance.index', tab='ledger') }}" 
+           class="whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs transition-colors flex items-center gap-2
+                  {% if active_tab == 'ledger' or not active_tab %}
+                      border-primary-500 text-primary-600 dark:text-primary-400
+                  {% else %}
+                      border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300
+                  {% endif %}">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+            Finance Ledger
+        </a>
+
+        <a href="{{ url_for('finance.index', tab='savings') }}" 
+           class="whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs transition-colors flex items-center gap-2
+                  {% if active_tab == 'savings' %}
+                      border-primary-500 text-primary-600 dark:text-primary-400
+                  {% else %}
+                      border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300
+                  {% endif %}">
+            <i data-lucide="building-2" class="w-4 h-4"></i>
+            Savings Management
+        </a>
+
+        <a href="{{ url_for('finance.index', tab='md') }}" 
+           class="whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs transition-colors flex items-center gap-2
+                  {% if active_tab == 'md' %}
+                      border-primary-500 text-primary-600 dark:text-primary-400
+                  {% else %}
+                      border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300
+                  {% endif %}">
+            <i data-lucide="user-check" class="w-4 h-4"></i>
+            MD Sir Account
+        </a>
+
+        <a href="{{ url_for('finance.index', tab='credit') }}" 
+           class="whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs transition-colors flex items-center gap-2
+                  {% if active_tab == 'credit' %}
+                      border-primary-500 text-primary-600 dark:text-primary-400
+                  {% else %}
+                      border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300
+                  {% endif %}">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            Credit Accounts
+        </a>
+
+        <a href="{{ url_for('finance.index', tab='loans') }}" 
+           class="whitespace-nowrap py-3 px-1 border-b-2 font-bold text-xs transition-colors flex items-center gap-2
+                  {% if active_tab == 'loans' %}
+                      border-primary-500 text-primary-600 dark:text-primary-400
+                  {% else %}
+                      border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300
+                  {% endif %}">
+            <i data-lucide="landmark" class="w-4 h-4"></i>
+            Loan Installments
+        </a>
+    </nav>
+</div>

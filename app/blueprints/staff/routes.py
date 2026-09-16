@@ -31,17 +31,42 @@ def index():
         query = Payroll.query
         if search_query:
             query = query.join(Employee).filter(Employee.name.ilike(f'%{search_query}%'))
-        payrolls = query.order_by(Payroll.month.desc(), Payroll.id.desc()).all()
+        payrolls = query.order_by(Payroll.date.desc(), Payroll.id.desc()).all()
         
-        # Also grab advances list to show in panel
+        # Calculate overall totals for Payroll
+        total_gross = sum(p.calculated_salary or 0.0 for p in payrolls)
+        total_advance = sum(p.advance_adjusted or 0.0 for p in payrolls)
+        total_deductions = sum(p.deductions or 0.0 for p in payrolls)
+        total_net = sum(p.net_payable or 0.0 for p in payrolls)
+        total_paid = sum(p.paid_amount or 0.0 for p in payrolls)
+        total_remaining = sum(p.pending_amount or 0.0 for p in payrolls)
+
+        # Grab advances list to show in panel
         advances = EmployeeAdvance.query.order_by(EmployeeAdvance.date.desc()).all()
+        
+        # Calculate overall employee advance loan and unpaid salary balances
+        all_emps = Employee.query.all()
+        for e in all_emps:
+            e.recalculate_balances()
+        tot_emp_advance_loan = sum(e.advance_balance for e in all_emps)
+        tot_emp_unpaid_salary = sum(e.outstanding_salary for e in all_emps)
+        tot_net_staff_balance = tot_emp_unpaid_salary - tot_emp_advance_loan
         
         return render_template(
             'staff/payroll.html',
             view=view,
             payrolls=payrolls,
             advances=advances,
-            search_query=search_query
+            search_query=search_query,
+            total_gross=total_gross,
+            total_advance=total_advance,
+            total_deductions=total_deductions,
+            total_net=total_net,
+            total_paid=total_paid,
+            total_remaining=total_remaining,
+            tot_emp_advance_loan=tot_emp_advance_loan,
+            tot_emp_unpaid_salary=tot_emp_unpaid_salary,
+            tot_net_staff_balance=tot_net_staff_balance
         )
 
     elif view == 'ledgers':
@@ -50,6 +75,9 @@ def index():
         employee_id = request.args.get('employee_id', type=int)
         
         selected_employee = None
+        display_entries = []
+        tot_debit = 0.0
+        tot_credit = 0.0
         ledger_entries = []
         
         if employee_id:
@@ -122,20 +150,41 @@ def index():
             
             # Running Balance calculation: What we owe the employee
             running = 0.0
+            tot_debit = 0.0
+            tot_credit = 0.0
             for entry in ledger_entries:
+                tot_debit += entry['debit']
+                tot_credit += entry['credit']
                 if 'Accrued' in entry['type']:
                     running += entry['debit']
                 elif 'Payment' in entry['type']:
                     running -= entry['credit']
-                # For advances, it's cash we gave, so it's a debit to advance balance
                 entry['running_balance'] = running
+
+            display_entries = list(reversed(ledger_entries))
+
+            # Advance Loan Breakdown for Individual Employee
+            advs_all = EmployeeAdvance.query.filter_by(employee_id=selected_employee.id).all()
+            pays_all = Payroll.query.filter_by(employee_id=selected_employee.id).all()
+            tot_adv_issued = sum(a.amount for a in advs_all)
+            tot_adv_adjusted = sum(p.advance_adjusted for p in pays_all)
+            net_adv_loan = max(0.0, tot_adv_issued - tot_adv_adjusted)
+        else:
+            tot_adv_issued = 0.0
+            tot_adv_adjusted = 0.0
+            net_adv_loan = 0.0
 
         return render_template(
             'staff/ledger.html',
             view=view,
             employees=employees,
             selected_employee=selected_employee,
-            ledger_entries=ledger_entries
+            ledger_entries=display_entries,
+            tot_debit=tot_debit,
+            tot_credit=tot_credit,
+            tot_adv_issued=tot_adv_issued,
+            tot_adv_adjusted=tot_adv_adjusted,
+            net_adv_loan=net_adv_loan
         )
 
     return redirect(url_for('staff.index'))
@@ -303,8 +352,28 @@ def advance_add():
                 payment_method=advance.payment_method
             )
 
+        # Auto-adjust any recent/open payroll entries for this employee to absorb the new advance
+        recent_payrolls = Payroll.query.filter_by(employee_id=employee.id).order_by(Payroll.date.desc(), Payroll.id.desc()).all()
+        for pay in recent_payrolls:
+            employee.recalculate_balances()
+            available_adv = employee.advance_balance + pay.advance_adjusted
+            if available_adv > 0 and pay.calculated_salary > 0:
+                new_adv_adj = min(available_adv, pay.calculated_salary)
+                pay.advance_adjusted = new_adv_adj
+                pay.net_payable = max(0.0, pay.calculated_salary - pay.advance_adjusted - pay.deductions)
+                pay.pending_amount = max(0.0, pay.net_payable - pay.paid_amount)
+                if pay.pending_amount <= 0.01:
+                    pay.pending_amount = 0.0
+                    pay.payment_status = 'Paid'
+                elif pay.paid_amount > 0:
+                    pay.payment_status = 'Partially Paid'
+                else:
+                    pay.payment_status = 'Pending'
+                db.session.flush()
+
+        employee.recalculate_balances()
         db.session.commit()
-        flash(f'Salary advance of {advance.amount} paid to {employee.name}.', 'success')
+        flash(f'Salary advance of ₹{advance.amount:.2f} paid to {employee.name} and reflected in payroll.', 'success')
         return redirect(url_for('staff.index', view='payroll'))
 
     return render_template('staff/form.html', form=form, title="Issue Employee Advance")
@@ -324,7 +393,27 @@ def advance_delete(advance_id):
     # Recalculate employee balances
     employee = Employee.query.get(employee_id)
     employee.recalculate_balances()
-    
+
+    # Recalculate recent payroll entries if advance adjusted exceeded new available advance
+    recent_payrolls = Payroll.query.filter_by(employee_id=employee_id).order_by(Payroll.date.desc(), Payroll.id.desc()).all()
+    total_adv_issued = sum(a.amount for a in EmployeeAdvance.query.filter_by(employee_id=employee_id).all())
+    running_adv_avail = total_adv_issued
+    for pay in reversed(recent_payrolls):
+        new_adj = min(running_adv_avail, pay.advance_adjusted)
+        pay.advance_adjusted = new_adj
+        pay.net_payable = max(0.0, pay.calculated_salary - pay.advance_adjusted - pay.deductions)
+        pay.pending_amount = max(0.0, pay.net_payable - pay.paid_amount)
+        if pay.pending_amount <= 0.01:
+            pay.pending_amount = 0.0
+            pay.payment_status = 'Paid'
+        elif pay.paid_amount > 0:
+            pay.payment_status = 'Partially Paid'
+        else:
+            pay.payment_status = 'Pending'
+        running_adv_avail = max(0.0, running_adv_avail - new_adj)
+        db.session.flush()
+
+    employee.recalculate_balances()
     db.session.commit()
     flash('Advance record deleted successfully.', 'success')
     return redirect(url_for('staff.index', view='payroll'))
@@ -339,14 +428,14 @@ def payroll_calculate():
         return jsonify({'error': 'Missing employee_id'}), 400
         
     employee = Employee.query.get_or_404(employee_id)
-    
-    # Fetch outstanding advance balance
-    advance_bal = employee.advance_balance
+    employee.recalculate_balances()
     
     return jsonify({
         'basic_salary': employee.basic_salary,
         'salary_type': employee.salary_type,
-        'advance_balance': advance_bal
+        'advance_balance': employee.advance_balance,
+        'outstanding_salary': employee.outstanding_salary,
+        'net_balance': employee.net_balance
     })
 
 
@@ -364,13 +453,21 @@ def payroll_add():
     if form.validate_on_submit():
         emp_id = form.employee_id.data
         payroll_month = form.month.data
+        payroll_date = form.date.data or date.today()
 
-        days_present = form.days_present.data
-        calculated_salary = form.calculated_salary.data
-        advance_adjusted = form.advance_adjusted.data
-        deductions = form.deductions.data
-        net_payable = form.net_payable.data
-        paid_amount = form.paid_amount.data
+        days_present = form.days_present.data or 0.0
+        calculated_salary = form.calculated_salary.data or 0.0
+        employee = Employee.query.get(emp_id)
+        employee.recalculate_balances()
+        
+        # Auto-adjust advance fallback: if user did not manually enter advance_adjusted (or entered 0)
+        # and employee has an advance_balance > 0, auto-adjust up to calculated_salary
+        if advance_adjusted <= 0.0 and employee.advance_balance > 0 and calculated_salary > 0:
+            advance_adjusted = min(employee.advance_balance, calculated_salary)
+        
+        # Calculate Net Payable according to formula: Gross - Advance - Deductions
+        net_payable = max(0.0, calculated_salary - advance_adjusted - deductions)
+        paid_amount = form.paid_amount.data or 0.0
         
         if paid_amount > 0 and form.payment_method.data == 'Split':
             cash_val = form.cash_amount.data or 0.0
@@ -379,19 +476,24 @@ def payroll_add():
                 flash("Error: The sum of Cash Portion and Online Portion must equal the released Paid Amount.", "danger")
                 return render_template('staff/form.html', form=form, title="Release Employee Payroll")
         
-        # Calculate pending amount
+        # Calculate remaining amount formula: Remaining = Net Payable - Amount Paid
         pending_amount = max(0.0, net_payable - paid_amount)
         
-        # Determine status
-        if pending_amount == 0:
+        # Determine status automatically:
+        # Paid -> Remaining = 0
+        # Partially Paid -> Remaining > 0 and Amount Paid > 0
+        # Pending -> Amount Paid = 0
+        if pending_amount <= 0.01:
             status = 'Paid'
+            pending_amount = 0.0
         elif paid_amount > 0:
-            status = 'Partial'
+            status = 'Partially Paid'
         else:
             status = 'Pending'
             
         payroll = Payroll(
             employee_id=emp_id,
+            date=payroll_date,
             month=payroll_month,
             days_present=days_present,
             calculated_salary=calculated_salary,
@@ -401,8 +503,9 @@ def payroll_add():
             paid_amount=paid_amount,
             pending_amount=pending_amount,
             payment_status=status,
-            payment_date=date.today() if paid_amount > 0 else None,
+            payment_date=payroll_date if paid_amount > 0 else None,
             payment_method=form.payment_method.data if paid_amount > 0 else None,
+            remarks=form.remarks.data or 'Regular Salary',
             cash_amount=form.cash_amount.data if (paid_amount > 0 and form.payment_method.data == 'Split') else 0.0,
             online_amount=form.online_amount.data if (paid_amount > 0 and form.payment_method.data == 'Split') else 0.0,
             created_at=datetime.utcnow()
@@ -420,40 +523,80 @@ def payroll_add():
             if payroll.payment_method == 'Split':
                 if payroll.cash_amount > 0:
                     CashBook.log_transaction(
-                        date=date.today(),
+                        date=payroll_date,
                         transaction_type='Out',
                         amount=payroll.cash_amount,
                         source='Payroll',
                         reference_id=payroll.id,
                         description=f"Staff Salary (Split-Cash): {employee.name} ({payroll.month})",
-                        payment_method='Cash'
+                        payment_method='Cash',
+                        category='Staff Salary',
+                        remarks=payroll.remarks
                     )
                 if payroll.online_amount > 0:
                     CashBook.log_transaction(
-                        date=date.today(),
+                        date=payroll_date,
                         transaction_type='Out',
                         amount=payroll.online_amount,
                         source='Payroll',
                         reference_id=payroll.id,
                         description=f"Staff Salary (Split-Online): {employee.name} ({payroll.month})",
-                        payment_method='UPI'
+                        payment_method='UPI',
+                        category='Staff Salary',
+                        remarks=payroll.remarks
                     )
             else:
                 CashBook.log_transaction(
-                    date=date.today(),
+                    date=payroll_date,
                     transaction_type='Out',
                     amount=paid_amount,
                     source='Payroll',
                     reference_id=payroll.id,
                     description=f"Staff Salary: {employee.name} ({payroll.month}) via {payroll.payment_method}",
-                    payment_method=payroll.payment_method or 'Cash'
+                    payment_method=payroll.payment_method or 'Cash',
+                    category='Staff Salary',
+                    remarks=payroll.remarks
                 )
 
         db.session.commit()
-        flash(f"Payroll created for {employee.name}. Paid: {paid_amount}, Pending: {pending_amount}", "success")
+        flash(f"Payroll recorded for {employee.name}. Net Payable: {net_payable}, Paid: {paid_amount}, Remaining: {pending_amount}", "success")
         return redirect(url_for('staff.index', view='payroll'))
 
     return render_template('staff/form.html', form=form, title="Release Employee Payroll")
+
+
+@staff_bp.route('/payroll/auto_adjust/<int:payroll_id>', methods=['POST'])
+@login_required
+def payroll_auto_adjust(payroll_id):
+    payroll = Payroll.query.get_or_404(payroll_id)
+    employee = Employee.query.get(payroll.employee_id)
+    employee.recalculate_balances()
+    
+    # Calculate available advance (current employee advance_balance + payroll's current advance_adjusted)
+    available_adv = employee.advance_balance + payroll.advance_adjusted
+    
+    if available_adv <= 0:
+        flash(f"No outstanding advance balance available for {employee.name}.", "info")
+        return redirect(url_for('staff.index', view='payroll'))
+        
+    new_adv_adj = min(available_adv, payroll.calculated_salary)
+    payroll.advance_adjusted = new_adv_adj
+    payroll.net_payable = max(0.0, payroll.calculated_salary - payroll.advance_adjusted - payroll.deductions)
+    payroll.pending_amount = max(0.0, payroll.net_payable - payroll.paid_amount)
+    
+    if payroll.pending_amount <= 0.01:
+        payroll.pending_amount = 0.0
+        payroll.payment_status = 'Paid'
+    elif payroll.paid_amount > 0:
+        payroll.payment_status = 'Partially Paid'
+    else:
+        payroll.payment_status = 'Pending'
+        
+    employee.recalculate_balances()
+    db.session.commit()
+    
+    flash(f"Auto-adjusted advance of ₹{new_adv_adj:.2f} for {employee.name}'s payroll.", "success")
+    return redirect(url_for('staff.index', view='payroll'))
 
 
 @staff_bp.route('/payroll/delete/<int:payroll_id>', methods=['POST'])
@@ -515,16 +658,18 @@ def payroll_pay(payroll_id):
         
         # Update payroll fields
         payroll.paid_amount += amount_to_pay
-        payroll.pending_amount -= amount_to_pay
+        payroll.pending_amount = max(0.0, payroll.net_payable - payroll.paid_amount)
         
         if payroll.pending_amount <= 0.01:
             payroll.pending_amount = 0.0
             payroll.payment_status = 'Paid'
         else:
-            payroll.payment_status = 'Partial'
+            payroll.payment_status = 'Partially Paid'
             
         payroll.payment_date = payment_date
         payroll.payment_method = payment_method
+        if form.remarks.data:
+            payroll.remarks = form.remarks.data
         payroll.cash_amount = form.cash_amount.data if payment_method == 'Split' else 0.0
         payroll.online_amount = form.online_amount.data if payment_method == 'Split' else 0.0
         
@@ -538,7 +683,9 @@ def payroll_pay(payroll_id):
                     source='Payroll',
                     reference_id=payroll.id,
                     description=f"Staff Salary Payment (Split-Cash): {employee.name} ({payroll.month})",
-                    payment_method='Cash'
+                    payment_method='Cash',
+                    category='Staff Salary',
+                    remarks=payroll.remarks
                 )
             if payroll.online_amount > 0:
                 CashBook.log_transaction(
@@ -548,7 +695,9 @@ def payroll_pay(payroll_id):
                     source='Payroll',
                     reference_id=payroll.id,
                     description=f"Staff Salary Payment (Split-Online): {employee.name} ({payroll.month})",
-                    payment_method='UPI'
+                    payment_method='UPI',
+                    category='Staff Salary',
+                    remarks=payroll.remarks
                 )
         else:
             CashBook.log_transaction(
@@ -558,7 +707,9 @@ def payroll_pay(payroll_id):
                 source='Payroll',
                 reference_id=payroll.id,
                 description=f"Staff Salary Payment: {employee.name} ({payroll.month}) via {payment_method}",
-                payment_method=payment_method
+                payment_method=payment_method,
+                category='Staff Salary',
+                remarks=payroll.remarks
             )
         
         # Recalculate employee balances
@@ -569,3 +720,35 @@ def payroll_pay(payroll_id):
         return redirect(url_for('staff.index', view='payroll'))
         
     return render_template('staff/pay_payroll.html', form=form, payroll=payroll, employee=employee)
+
+
+@staff_bp.route('/reset_month', methods=['POST'])
+@login_required
+def reset_month():
+    # 1. Clean cashbook transactions associated with Payroll and EmployeeAdvance
+    payrolls = Payroll.query.all()
+    for pay in payrolls:
+        CashBook.remove_transaction(source='Payroll', reference_id=pay.id)
+        
+    advances = EmployeeAdvance.query.all()
+    for adv in advances:
+        CashBook.remove_transaction(source='EmployeeAdvance', reference_id=adv.id)
+
+    # 2. Delete all records from Payroll, EmployeeAdvance, and Attendance
+    Payroll.query.delete()
+    EmployeeAdvance.query.delete()
+    Attendance.query.delete()
+    
+    db.session.flush()
+
+    # 3. Reset balances for all employees to 0.0
+    employees = Employee.query.all()
+    for emp in employees:
+        emp.advance_balance = 0.0
+        emp.outstanding_salary = 0.0
+    
+    db.session.commit()
+
+    flash("Month closed successfully! All staff salary and advance balances have been reset to ₹0 for the new month, while preserving all staff member profiles.", "success")
+    return redirect(url_for('staff.index', view='payroll'))
+

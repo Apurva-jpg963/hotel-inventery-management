@@ -29,12 +29,16 @@ class CashBook(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow, index=True)
-    transaction_type = db.Column(db.String(10), nullable=False)  # 'In' (Inflow), 'Out' (Outflow)
+    transaction_type = db.Column(db.String(10), nullable=False)  # 'In' (Inflow), 'Out' (Outflow), 'Deposit', 'Withdrawal'
     amount = db.Column(db.Float, nullable=False)
-    payment_method = db.Column(db.String(20), nullable=False, default='Cash')  # Cash, UPI, Card, Bank, Cheque
-    source = db.Column(db.String(50), nullable=False)  # 'Income', 'Expense', 'VendorPayment', 'Payroll', 'Savings', 'Loan', 'Credit', 'MDSir'
+    deposit_amount = db.Column(db.Float, default=0.0)
+    withdrawal_amount = db.Column(db.Float, default=0.0)
+    payment_method = db.Column(db.String(30), nullable=False, default='Cash')  # Cash, UPI, Bank Transfer, Card, Cheque, Other
+    category = db.Column(db.String(100), nullable=True)  # Category for Deposit / Withdrawal
+    source = db.Column(db.String(50), nullable=False)  # 'Income', 'Expense', 'VendorPayment', 'Payroll', 'Savings', 'Loan', 'Credit', 'MDSir', 'FinanceLedger'
     reference_id = db.Column(db.Integer, nullable=True)  # ID of the source record
     description = db.Column(db.String(255), nullable=True)
+    remarks = db.Column(db.String(255), nullable=True)
     running_balance = db.Column(db.Float, default=0.0)
     running_cash_balance = db.Column(db.Float, default=0.0)
     running_bank_balance = db.Column(db.Float, default=0.0)
@@ -53,24 +57,27 @@ class CashBook(db.Model):
 
     @staticmethod
     def get_bank_balance():
-        """Balance for non-Cash transactions (UPI, Card, Bank, Cheque)."""
+        """Balance for non-Cash transactions (UPI, Card, Bank, Cheque, etc.)."""
         last_entry = CashBook.query.order_by(CashBook.id.desc()).first()
         return last_entry.running_bank_balance if last_entry else 0.0
 
     @staticmethod
-    def log_transaction(date, transaction_type, amount, source, reference_id, description, payment_method='Cash'):
+    def log_transaction(date, transaction_type, amount, source, reference_id, description, payment_method='Cash', category=None, remarks=None):
         # Calculate new running balances
         current_cash = CashBook.get_cash_balance()
         current_bank = CashBook.get_bank_balance()
         current_total = current_cash + current_bank
         
         is_cash = (payment_method == 'Cash')
-        if transaction_type == 'In':
+        is_deposit = transaction_type in ['In', 'Deposit']
+        
+        dep_amt = amount if is_deposit else 0.0
+        with_amt = amount if not is_deposit else 0.0
+
+        if is_deposit:
             change = amount
-        elif transaction_type == 'Out':
-            change = -amount
         else:
-            raise ValueError("Invalid transaction type. Must be 'In' or 'Out'")
+            change = -amount
 
         new_cash = current_cash + change if is_cash else current_cash
         new_bank = current_bank + change if not is_cash else current_bank
@@ -80,10 +87,14 @@ class CashBook(db.Model):
             date=date,
             transaction_type=transaction_type,
             amount=amount,
+            deposit_amount=dep_amt,
+            withdrawal_amount=with_amt,
             payment_method=payment_method,
+            category=category,
             source=source,
             reference_id=reference_id,
             description=description,
+            remarks=remarks,
             running_balance=new_total,
             running_cash_balance=new_cash,
             running_bank_balance=new_bank
@@ -108,12 +119,15 @@ class CashBook(db.Model):
         current_bank = 0.0
         for entry in entries:
             is_cash = (entry.payment_method == 'Cash')
-            if entry.transaction_type == 'In':
+            is_deposit = entry.transaction_type in ['In', 'Deposit']
+            
+            entry.deposit_amount = entry.amount if is_deposit else 0.0
+            entry.withdrawal_amount = entry.amount if not is_deposit else 0.0
+
+            if is_deposit:
                 change = entry.amount
-            elif entry.transaction_type == 'Out':
-                change = -entry.amount
             else:
-                change = 0.0
+                change = -entry.amount
                 
             if is_cash:
                 current_cash += change
@@ -252,6 +266,15 @@ class Employee(db.Model):
         self.outstanding_salary = total_pending
         db.session.flush()
 
+    @property
+    def net_balance(self):
+        """Net position: outstanding_salary (we owe) - advance_balance (they owe).
+        Positive (+) means Hotel owes employee.
+        Negative (-) means Employee owes Hotel.
+        """
+        return (self.outstanding_salary or 0.0) - (self.advance_balance or 0.0)
+
+
 
 class Attendance(db.Model):
     __tablename__ = 'attendance'
@@ -283,17 +306,19 @@ class Payroll(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
-    month = db.Column(db.String(7), nullable=False, index=True)  # Format "YYYY-MM"
+    date = db.Column(db.Date, nullable=False, default=datetime.utcnow, index=True)
+    month = db.Column(db.String(50), nullable=False, index=True)  # Format "YYYY-MM" or Period note
     days_present = db.Column(db.Float, nullable=True, default=0.0)
-    calculated_salary = db.Column(db.Float, nullable=False)
-    advance_adjusted = db.Column(db.Float, default=0.0)
-    deductions = db.Column(db.Float, default=0.0)
-    net_payable = db.Column(db.Float, nullable=False)
-    paid_amount = db.Column(db.Float, default=0.0)
-    pending_amount = db.Column(db.Float, default=0.0)
-    payment_status = db.Column(db.String(20), default='Pending')  # Paid, Pending, Partial
+    calculated_salary = db.Column(db.Float, nullable=False)  # Gross Salary
+    advance_adjusted = db.Column(db.Float, default=0.0)  # Advance Adjusted
+    deductions = db.Column(db.Float, default=0.0)  # Other Deductions
+    net_payable = db.Column(db.Float, nullable=False)  # Net Payable
+    paid_amount = db.Column(db.Float, default=0.0)  # Amount Paid
+    pending_amount = db.Column(db.Float, default=0.0)  # Remaining
+    payment_status = db.Column(db.String(30), default='Pending')  # Paid, Partially Paid, Pending
     payment_date = db.Column(db.Date, nullable=True)
-    payment_method = db.Column(db.String(20), nullable=True)  # Cash, UPI, Bank
+    payment_method = db.Column(db.String(30), nullable=True)  # Cash, UPI, Bank Transfer, Card, Cheque, Other
+    remarks = db.Column(db.String(255), nullable=True)  # Remarks notes (Advance adjusted, Leave deduction, etc.)
     cash_amount = db.Column(db.Float, nullable=True, default=0.0)
     online_amount = db.Column(db.Float, nullable=True, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -372,26 +397,45 @@ class CreditAccount(db.Model):
     transactions = db.relationship('CreditTransaction', backref='credit_account', cascade='all, delete-orphan', lazy='dynamic')
 
     def recalculate_balances(self):
-        # Calculate receivables: sum of all 'Given' transactions (which can be positive or negative) 
-        # and subtract historical 'Received' transactions.
-        total_given = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
-            CreditTransaction.credit_account_id == self.id, CreditTransaction.transaction_type == 'Given'
+        # Given transactions (positive values add to given, negative values add to received)
+        pos_given = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
+            CreditTransaction.credit_account_id == self.id,
+            CreditTransaction.transaction_type == 'Given',
+            CreditTransaction.amount > 0
         ).scalar() or 0.0
-        total_received = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
-            CreditTransaction.credit_account_id == self.id, CreditTransaction.transaction_type == 'Received'
-        ).scalar() or 0.0
-        self.receivable_balance = max(0.0, total_given - total_received)
-
-        # Calculate payables: sum of all 'Taken' transactions (which can be positive or negative)
-        # and subtract historical 'Paid' transactions.
-        total_taken = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
-            CreditTransaction.credit_account_id == self.id, CreditTransaction.transaction_type == 'Taken'
-        ).scalar() or 0.0
-        total_paid = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
-            CreditTransaction.credit_account_id == self.id, CreditTransaction.transaction_type == 'Paid'
-        ).scalar() or 0.0
-        self.payable_balance = max(0.0, total_taken - total_paid)
         
+        neg_given = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
+            CreditTransaction.credit_account_id == self.id,
+            CreditTransaction.transaction_type == 'Given',
+            CreditTransaction.amount < 0
+        ).scalar() or 0.0
+        
+        total_received = (db.session.query(db.func.sum(CreditTransaction.amount)).filter(
+            CreditTransaction.credit_account_id == self.id,
+            CreditTransaction.transaction_type == 'Received'
+        ).scalar() or 0.0) + abs(neg_given)
+        
+        self.receivable_balance = max(0.0, pos_given - total_received)
+
+        # Taken transactions (positive values add to taken, negative values add to paid)
+        pos_taken = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
+            CreditTransaction.credit_account_id == self.id,
+            CreditTransaction.transaction_type == 'Taken',
+            CreditTransaction.amount > 0
+        ).scalar() or 0.0
+        
+        neg_taken = db.session.query(db.func.sum(CreditTransaction.amount)).filter(
+            CreditTransaction.credit_account_id == self.id,
+            CreditTransaction.transaction_type == 'Taken',
+            CreditTransaction.amount < 0
+        ).scalar() or 0.0
+        
+        total_paid = (db.session.query(db.func.sum(CreditTransaction.amount)).filter(
+            CreditTransaction.credit_account_id == self.id,
+            CreditTransaction.transaction_type == 'Paid'
+        ).scalar() or 0.0) + abs(neg_taken)
+        
+        self.payable_balance = max(0.0, pos_taken - total_paid)
         db.session.flush()
 
 

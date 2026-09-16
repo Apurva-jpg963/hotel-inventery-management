@@ -49,7 +49,7 @@ class ERPTestCase(unittest.TestCase):
             amount=5000.0,
             source='Income',
             reference_id=1,
-            description='Room Revenue'
+            description='Old Bill Received'
         )
         self.assertEqual(CashBook.get_current_balance(), 5000.0)
 
@@ -390,7 +390,7 @@ class ERPTestCase(unittest.TestCase):
         # 1. Test Split Income Insertion
         income = Income(
             date=date.today(),
-            category='Room Revenue',
+            category='Old Bill Received',
             amount=10000.0,
             payment_method='Split',
             cash_amount=4000.0,
@@ -467,6 +467,43 @@ class ERPTestCase(unittest.TestCase):
         self.assertNotIn(b'loan_id', response.data)
         self.assertNotIn(b'principal_paid', response.data)
 
+    def test_reset_month_resets_balances_and_keeps_profiles(self):
+        # Create user
+        user = User(username='testadmin', email='admin@saiprasad.com', role='Admin')
+        user.set_password('pass123')
+        db.session.add(user)
+        
+        # Create employee
+        emp = Employee(name='Ramesh Kumar', designation='Head Chef', basic_salary=800.0, advance_balance=500.0, outstanding_salary=1000.0)
+        db.session.add(emp)
+        db.session.commit()
+
+        # Add payroll & advance records
+        adv = EmployeeAdvance(employee_id=emp.id, date=date.today(), amount=500.0)
+        pay = Payroll(employee_id=emp.id, date=date.today(), month='2026-08', calculated_salary=800.0, net_payable=800.0, pending_amount=1000.0)
+        db.session.add(adv)
+        db.session.add(pay)
+        db.session.commit()
+
+        client = self.app.test_client()
+        client.post('/auth/login', data={'username': 'testadmin', 'password': 'pass123'}, follow_redirects=True)
+
+        # Execute reset_month
+        resp = client.post('/staff/reset_month', follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        # Verify employee profile remains
+        emp_after = Employee.query.filter_by(name='Ramesh Kumar').first()
+        self.assertIsNotNone(emp_after)
+        self.assertEqual(emp_after.designation, 'Head Chef')
+        self.assertEqual(emp_after.advance_balance, 0.0)
+        self.assertEqual(emp_after.outstanding_salary, 0.0)
+
+        # Verify Payroll and EmployeeAdvance records are cleared
+        self.assertEqual(Payroll.query.count(), 0)
+        self.assertEqual(EmployeeAdvance.query.count(), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
+

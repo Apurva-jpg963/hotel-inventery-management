@@ -8,14 +8,15 @@ from app.models import User, Settings
 @settings_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
-    profile_form = EditProfileForm(email=current_user.email)
+    profile_form = EditProfileForm(username=current_user.username, email=current_user.email)
     password_form = ChangePasswordForm()
     
-    # Handle Profile Email Update
+    # Handle Profile Update
     if 'email' in request.form and profile_form.validate_on_submit():
+        current_user.username = profile_form.username.data
         current_user.email = profile_form.email.data
         db.session.commit()
-        flash('Profile email updated successfully!', 'success')
+        flash('Profile updated successfully!', 'success')
         return redirect(url_for('settings.index'))
         
     # Handle Password Update

@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Ledger Entry | Hotel Saiprasad Finance ERP{% endblock %}
+{% block header_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Back Link -->
+    <a href="{{ url_for('finance.index', tab='ledger') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 mb-6 transition-colors">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Finance Ledger
+    </a>
+
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                <i data-lucide="calculator" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold">{{ title }}</h3>
+                <p class="text-xs text-slate-400">Record a deposit or withdrawal in the central accounting ledger</p>
+            </div>
+        </div>
+
+        <form method="POST" action="" class="space-y-5">
+            {{ form.hidden_tag() }}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="date">Transaction Date</label>
+                    {{ form.date(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="date") }}
+                    {% for error in form.date.errors %}
+                        <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="type">Entry Type</label>
+                    <div class="relative">
+                        {{ form.type(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer", id="entry-type-select") }}
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="description">Description</label>
+                {{ form.description(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all") }}
+                {% for error in form.description.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="category">Category</label>
+                    <div class="relative">
+                        {{ form.category(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer", id="category-select") }}
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="payment_method">Payment Method</label>
+                    <div class="relative">
+                        {{ form.payment_method(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all appearance-none cursor-pointer") }}
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 pointer-events-none">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="amount">Amount (₹)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none text-sm font-semibold">₹</span>
+                    {{ form.amount(class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", type="number", step="0.01") }}
+                </div>
+                {% for error in form.amount.errors %}
+                    <span class="text-rose-500 text-xs mt-1 block">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2" for="remarks">Remarks / Notes</label>
+                {{ form.remarks(class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm transition-all", rows="3") }}
+            </div>
+
+            <div class="pt-4 flex items-center gap-3">
+                <button type="submit" class="w-full py-3 px-6 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-primary-500/20 transition-all">
+                    {{ form.submit.label.text }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const typeSelect = document.getElementById("entry-type-select");
+    const categorySelect = document.getElementById("category-select");
+    
+    if (!typeSelect || !categorySelect) return;
+    
+    const depositCategories = [
+        ["Cash Collection", "Cash Collection"],
+        ["Online Collection", "Online Collection"],
+        ["Bank Deposit", "Bank Deposit"],
+        ["Owner Investment", "Owner Investment"],
+        ["Other Income", "Other Income"]
+    ];
+    
+    const withdrawalCategories = [
+        ["Grocery", "Grocery"],
+        ["Dairy", "Dairy"],
+        ["Gas", "Gas"],
+        ["Wood", "Wood"],
+        ["Staff Salary", "Staff Salary"],
+        ["Vendor Payment", "Vendor Payment"],
+        ["Maintenance", "Maintenance"],
+        ["Rent", "Rent"],
+        ["Electricity", "Electricity"],
+        ["Miscellaneous", "Miscellaneous"]
+    ];
+    
+    function updateCategories() {
+        const isDeposit = typeSelect.value === "Deposit";
+        const cats = isDeposit ? depositCategories : withdrawalCategories;
+        const currentVal = categorySelect.value;
+        
+        categorySelect.innerHTML = "";
+        cats.forEach(([val, label]) => {
+            const opt = document.createElement("option");
+            opt.value = val;
+            opt.textContent = label;
+            if (val === currentVal) opt.selected = true;
+            categorySelect.appendChild(opt);
+        });
+    }
+    
+    typeSelect.addEventListener("change", updateCategories);
+    updateCategories();
+});
+</script>
+{% endblock %}

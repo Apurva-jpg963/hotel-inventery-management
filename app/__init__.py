@@ -37,7 +37,17 @@ def create_app(config_class=Config):
     def shortdate_filter(date_val):
         if not date_val:
             return ""
-        return date_val.strftime('%d-%b-%Y')
+        if isinstance(date_val, str):
+            try:
+                from datetime import datetime
+                clean_str = date_val.split(' ')[0].split('T')[0]
+                dt = datetime.strptime(clean_str, '%Y-%m-%d')
+                return dt.strftime('%d-%b-%Y')
+            except Exception:
+                return date_val
+        if hasattr(date_val, 'strftime'):
+            return date_val.strftime('%d-%b-%Y')
+        return str(date_val)
 
     # Root redirect to dashboard
     @app.route('/')
@@ -83,7 +93,7 @@ def create_app(config_class=Config):
         tables_to_migrate = [
             'income', 'expenses', 'vendor_payments', 'employee_advances',
             'payroll', 'savings', 'loans', 'loan_repayments',
-            'credit_transactions', 'md_sir_account'
+            'credit_transactions', 'md_sir_account', 'cash_book'
         ]
         for tbl in tables_to_migrate:
             for col in ['cash_amount', 'online_amount']:
@@ -92,5 +102,21 @@ def create_app(config_class=Config):
                     db.session.commit()
                 except Exception:
                     db.session.rollback()
+
+        # Add custom new columns for CashBook and Payroll if they don't exist
+        extra_migrations = [
+            ('cash_book', 'category', 'VARCHAR(100)'),
+            ('cash_book', 'remarks', 'VARCHAR(255)'),
+            ('cash_book', 'deposit_amount', 'FLOAT DEFAULT 0.0'),
+            ('cash_book', 'withdrawal_amount', 'FLOAT DEFAULT 0.0'),
+            ('payroll', 'date', 'DATE'),
+            ('payroll', 'remarks', 'VARCHAR(255)')
+        ]
+        for tbl, col, col_type in extra_migrations:
+            try:
+                db.session.execute(db.text(f"ALTER TABLE {tbl} ADD COLUMN {col} {col_type}"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
     return app

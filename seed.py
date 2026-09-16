@@ -1,11 +1,39 @@
 from app import create_app, db
-from app.models import User, Settings
+from app.models import User, Settings, Employee
+
+DEFAULT_STAFF = [
+    ("ADITYA J", "CASHIER"),
+    ("MANIK B", "CASHIER"),
+    ("AHEMAD S", "CASHIER"),
+    ("MANOJ R", "CAPTAIN"),
+    ("GOVID I", "CAPTAIN"),
+    ("CHINTU K", "CAPTAIN"),
+    ("AKASH C", "STEWARD"),
+    ("TAKSHAK R", "STEWARD"),
+    ("KIRAN S", "STEWARD"),
+    ("VIKAS R", "STEWARD"),
+    ("DEEPAK B", "STEWARD"),
+    ("SANTOSH S", "CHIEF"),
+    ("PIYUSH K", "CHIEF"),
+    ("LIPU", "CHIEF"),
+    ("BABASAHEB S", "CHIEF"),
+    ("DASHRAT S", "HK"),
+    ("FATIMA", "HK"),
+    ("POOJA B", "HK"),
+    ("SANGITA S", "HK"),
+    ("DATTA A", "DRIVER"),
+    ("NIVRUTI P", "E CHIEF"),
+    ("MAHESH H", "RM"),
+    ("UDAY C", "GM"),
+    ("ARIFA", "HK"),
+    ("PRADEEP", "HELPER")
+]
 
 def seed_database():
     app = create_app()
     with app.app_context():
         # 1. Create Default Admin User
-        admin_user = User.query.filter_by(username='admin').first()
+        admin_user = User.query.filter((User.username == 'admin') | (User.email == 'admin@saiprasad.com')).first()
         if not admin_user:
             admin_user = User(
                 username='admin',
@@ -36,9 +64,28 @@ def seed_database():
                 print(f"Seeded setting: {key} = {value}")
             else:
                 print(f"Skip setting: {key} already exists")
-                
+
+        # 3. Seed Default Staff Members
+        seeded_staff_count = 0
+        for name, desig in DEFAULT_STAFF:
+            emp = Employee.query.filter_by(name=name).first()
+            if not emp:
+                emp = Employee(
+                    name=name,
+                    designation=desig,
+                    salary_type='Daily',
+                    basic_salary=0.0,
+                    status='Active',
+                    advance_balance=0.0,
+                    outstanding_salary=0.0
+                )
+                db.session.add(emp)
+                seeded_staff_count += 1
+        
+        print(f"Seeded {seeded_staff_count} staff members.")
         db.session.commit()
         print("Database seeding completed successfully.")
 
 if __name__ == '__main__':
     seed_database()
+

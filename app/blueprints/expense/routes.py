@@ -43,7 +43,7 @@ def index():
 
     # Pagination
     page = request.args.get('page', 1, type=int)
-    pagination = query.order_by(Expense.date.desc(), Expense.id.desc()).paginate(page=page, per_page=15, error_out=False)
+    pagination = query.order_by(Expense.date.desc(), Expense.id.desc()).paginate(page=page, per_page=100, error_out=False)
     expenses = pagination.items
 
     # Fetch Categories for dropdown filter based on type

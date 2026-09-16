@@ -6,7 +6,7 @@ from datetime import date
 class IncomeForm(FlaskForm):
     date = DateField('Transaction Date', default=date.today, validators=[DataRequired()])
     category = SelectField('Income Category', choices=[
-        ('Room Revenue', 'Room Revenue'),
+        ('Old Bill Received', 'Old Bill Received'),
         ('Restaurant Revenue', 'Restaurant Revenue'),
         ('Banquet Revenue', 'Banquet Revenue'),
         ('Opening Balance', 'Opening Balance'),

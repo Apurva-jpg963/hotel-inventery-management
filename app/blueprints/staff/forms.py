@@ -47,28 +47,41 @@ class AdvanceForm(FlaskForm):
 
 class PayrollPaymentForm(FlaskForm):
     employee_id = SelectField('Select Employee', coerce=int, validators=[DataRequired()])
-    month = StringField('Payment Month/Date Note', validators=[
+    date = DateField('Payroll Date', default=date.today, validators=[DataRequired()])
+    month = StringField('Payment Month / Period Note', validators=[
         DataRequired(),
         Length(max=100, message="Note must be under 100 characters.")
-    ])
+    ], render_kw={"placeholder": "e.g. August 2026"})
     days_present = FloatField('Total Days Present', validators=[
         DataRequired(message="Total days present is required."),
         NumberRange(min=0.0, message="Days present must be 0 or more.")
     ])
-    calculated_salary = FloatField('Calculated Gross Salary (₹)', validators=[NumberRange(min=0.0)])
-    advance_adjusted = FloatField('Adjust Advance Balance (₹)', default=0.0, validators=[NumberRange(min=0.0)])
+    calculated_salary = FloatField('Gross Salary (₹)', validators=[NumberRange(min=0.0)])
+    advance_adjusted = FloatField('Advance Adjusted (₹)', default=0.0, validators=[NumberRange(min=0.0)])
     deductions = FloatField('Other Deductions (₹)', default=0.0, validators=[NumberRange(min=0.0)])
-    net_payable = FloatField('Net Payable Salary (₹)', validators=[NumberRange(min=0.0)])
-    paid_amount = FloatField('Amount Paid Now (₹)', default=0.0, validators=[NumberRange(min=0.0)])
+    net_payable = FloatField('Net Payable (₹)', validators=[NumberRange(min=0.0)])
+    paid_amount = FloatField('Amount Paid (₹)', default=0.0, validators=[NumberRange(min=0.0)])
     payment_method = SelectField('Payment Method', choices=[
         ('Cash', 'Cash'),
-        ('UPI', 'UPI / QR Code'),
-        ('Bank', 'Direct Bank Transfer'),
+        ('UPI', 'UPI'),
+        ('Bank Transfer', 'Bank Transfer'),
         ('Cheque', 'Cheque'),
+        ('Card', 'Card'),
+        ('Other', 'Other'),
         ('Split', 'Split (Cash & Online)')
     ], default='Cash', validators=[DataRequired()])
     cash_amount = FloatField('Cash Portion (₹)', default=0.0)
     online_amount = FloatField('Online Portion (₹)', default=0.0)
+    remarks = SelectField('Remarks / Note', choices=[
+        ('Regular Salary', 'Regular Salary'),
+        ('Advance adjusted', 'Advance adjusted'),
+        ('Leave deduction', 'Leave deduction'),
+        ('Bonus included', 'Bonus included'),
+        ('Overtime', 'Overtime'),
+        ('Festival bonus', 'Festival bonus'),
+        ('Partial payment', 'Partial payment'),
+        ('Other', 'Other')
+    ], default='Regular Salary', validators=[Optional()])
     submit = SubmitField('Release Payroll')
 
 
@@ -79,12 +92,24 @@ class StaffSalaryPaymentForm(FlaskForm):
     ])
     payment_method = SelectField('Payment Method', choices=[
         ('Cash', 'Cash'),
-        ('UPI', 'UPI / QR Code'),
-        ('Bank', 'Direct Bank Transfer'),
+        ('UPI', 'UPI'),
+        ('Bank Transfer', 'Bank Transfer'),
         ('Cheque', 'Cheque'),
+        ('Card', 'Card'),
+        ('Other', 'Other'),
         ('Split', 'Split (Cash & Online)')
     ], default='Cash', validators=[DataRequired()])
     cash_amount = FloatField('Cash Portion (₹)', default=0.0)
     online_amount = FloatField('Online Portion (₹)', default=0.0)
     payment_date = DateField('Payment Date', default=date.today, validators=[DataRequired()])
+    remarks = SelectField('Remarks', choices=[
+        ('Partial payment', 'Partial payment'),
+        ('Advance adjusted', 'Advance adjusted'),
+        ('Leave deduction', 'Leave deduction'),
+        ('Bonus included', 'Bonus included'),
+        ('Overtime', 'Overtime'),
+        ('Festival bonus', 'Festival bonus'),
+        ('Regular Salary', 'Regular Salary'),
+        ('Other', 'Other')
+    ], default='Partial payment', validators=[Optional()])
     submit = SubmitField('Record Payment')

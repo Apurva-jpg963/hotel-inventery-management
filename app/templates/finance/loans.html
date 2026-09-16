@@ -13,6 +13,9 @@
             <p class="text-xs text-slate-400">Track installments paid on bank loans. Installments paid decrease central cash balance.</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ url_for('finance.bulk_add', type='loan_repayment') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
+                <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
+            </a>
             <a href="{{ url_for('finance.loan_repay') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-700 hover:to-orange-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="receipt" class="w-4 h-4"></i> Record Installment Paid
             </a>
@@ -38,9 +41,10 @@
             <h4 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider">Installments Log</h4>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse erp-table">
+            <table class="w-full text-left border-collapse erp-table" data-type="loan_repayment">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-900/60 text-slate-400 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 w-10"><input type="checkbox" class="select-all-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent"></th>
                         <th class="px-6 py-4">Bank / Lender</th>
                         <th class="px-6 py-4">Payment Date</th>
                         <th class="px-6 py-4 text-center">Payment Channel</th>
@@ -52,6 +56,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                     {% for item in repayments %}
                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <td class="px-6 py-4 w-10"><input type="checkbox" class="row-checkbox rounded border-slate-300 dark:border-slate-800 text-primary-600 focus:ring-primary-500 bg-transparent" value="{{ item.id }}"></td>
                         <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                             {{ item.loan.lender_name }}
                         </td>
