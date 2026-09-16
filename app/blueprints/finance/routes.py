@@ -298,6 +298,16 @@ def ledger_delete(entry_id):
     return redirect(url_for('finance.index', tab='ledger'))
 
 
+@finance_bp.route('/ledger/clear', methods=['POST'])
+@login_required
+def ledger_clear():
+    CashBook.query.delete()
+    db.session.commit()
+    flash("Cash Book transactions cleared and Cash & Bank balances reset to ₹0.00.", "success")
+    return redirect(url_for('finance.index', tab='ledger'))
+
+
+
 # =========================================================================
 # SAVINGS MANAGEMENT
 # =========================================================================

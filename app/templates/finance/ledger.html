@@ -12,10 +12,15 @@
             <h3 class="text-lg font-bold text-slate-900 dark:text-white">Finance Accounting Ledger</h3>
             <p class="text-xs text-slate-400">Single transaction ledger tracking all deposits, withdrawals, and automatic balance calculation</p>
         </div>
-        <div class="flex gap-2 self-start sm:self-auto">
+        <div class="flex items-center gap-2 flex-wrap self-start sm:self-auto">
             <a href="{{ url_for('reports.export', type='finance') }}" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
             </a>
+            <form method="POST" action="{{ url_for('finance.ledger_clear') }}" onsubmit="return confirm('Are you sure you want to clear all cashbook transactions and reset Cash & Bank balances to ₹0.00?');" class="inline">
+                <button type="submit" class="flex items-center gap-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-600 hover:text-white dark:text-rose-400 dark:hover:text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all border border-rose-200 dark:border-rose-900/50">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Cash & Bank Balance
+                </button>
+            </form>
             <a href="{{ url_for('finance.ledger_add') }}" class="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="plus" class="w-4 h-4"></i> Add Ledger Entry
             </a>
@@ -122,15 +127,11 @@
 
                         <!-- Action -->
                         <td class="px-6 py-4 text-center whitespace-nowrap">
-                            {% if item.source == 'FinanceLedger' %}
                             <form method="POST" action="{{ url_for('finance.ledger_delete', entry_id=item.id) }}" onsubmit="return confirm('Delete this ledger entry?');" class="inline">
                                 <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Delete Entry">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </form>
-                            {% else %}
-                            <span class="text-[10px] text-slate-400 italic">Auto-logged</span>
-                            {% endif %}
                         </td>
                     </tr>
                     {% else %}
