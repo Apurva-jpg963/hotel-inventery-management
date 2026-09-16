@@ -13,13 +13,15 @@
             <p class="text-xs text-slate-400">Track and manage employee profiles, contact directories, and active payroll models</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="document.getElementById('resetMonthModal').classList.remove('hidden')" class="flex items-center gap-1.5 bg-rose-600/10 hover:bg-rose-600 text-rose-600 hover:text-white dark:text-rose-400 dark:hover:text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all border border-rose-200 dark:border-rose-900/50">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Close & Reset Month
+            </button>
             <a href="{{ url_for('finance.bulk_add', type='employee') }}" class="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm transition-all">
                 <i data-lucide="layers" class="w-4 h-4"></i> Bulk Add
             </a>
             <a href="{{ url_for('staff.add') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="user-plus" class="w-4 h-4"></i> Add Employee
             </a>
-
             <a href="{{ url_for('staff.index', view='payroll') }}" class="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all">
                 <i data-lucide="banknote" class="w-4 h-4"></i> Release Payroll
             </a>
@@ -140,4 +142,70 @@
     </div>
 
 </div>
+
+<!-- Reset Month Modal -->
+<div id="resetMonthModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-900 dark:text-white">Close & Reset Month</h3>
+                    <p class="text-xs text-slate-400">Prepare staff payroll for the new month</p>
+                </div>
+            </div>
+            <button onclick="document.getElementById('resetMonthModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+            <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 flex items-start gap-2.5">
+                <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-amber-600 mt-0.5"></i>
+                <div>
+                    <strong class="font-bold block">Important Notice:</strong>
+                    This will clear out the current month's salary records, advance payouts, and attendance logs, resetting all staff balances to <strong>₹0.00</strong> for the new month.
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-start gap-2.5">
+                <i data-lucide="check-circle" class="w-5 h-5 shrink-0 text-emerald-600 mt-0.5"></i>
+                <div>
+                    <strong class="font-bold block">Staff Profiles Kept Safe:</strong>
+                    All staff names, roles, daily rates, and contact details will remain completely intact in the system.
+                </div>
+            </div>
+        </div>
+
+        <form id="resetMonthForm" method="POST" action="{{ url_for('staff.reset_month') }}">
+            <div class="flex flex-col gap-2.5 pt-2">
+                <button type="button" onclick="exportAndReset()" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all text-xs">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> (Recommended) Export Excel & Reset Month
+                </button>
+                
+                <button type="submit" onclick="return confirm('Are you sure you want to reset all staff salary and advance records without downloading Excel?');" class="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-all text-xs">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Month Only (No Download)
+                </button>
+
+                <button type="button" onclick="document.getElementById('resetMonthModal').classList.add('hidden')" class="w-full text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium py-2 px-4 transition-all text-xs">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function exportAndReset() {
+    // 1. Trigger export workbook download
+    window.location.href = "{{ url_for('reports.export', type='employees') }}";
+    
+    // 2. Submit reset form after short delay to let download start
+    setTimeout(function() {
+        document.getElementById('resetMonthForm').submit();
+    }, 1500);
+}
+</script>
 {% endblock %}
