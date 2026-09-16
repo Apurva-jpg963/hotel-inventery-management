@@ -744,8 +744,7 @@ def reset_month():
     # 3. Reset balances for all employees to 0.0
     employees = Employee.query.all()
     for emp in employees:
-        emp.advance_balance = 0.0
-        emp.outstanding_salary = 0.0
+        emp.recalculate_balances()
     
     db.session.commit()
 
